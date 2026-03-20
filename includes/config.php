@@ -1,15 +1,15 @@
 <?php
-define('DB_HOST', 'localhost');
+define('DB_HOST', 'mysql.railway.internal');
 define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'ticketdesk');
-define('SITE_URL', 'http://localhost/ticketdesk');
+define('DB_PASS', 'YRmIFuKzMzelOzwkjEAjEMMEjCwYcdjA');
+define('DB_NAME', 'railway');
+define('SITE_URL', 'mysql://root:YRmIFuKzMzelOzwkjEAjEMMEjCwYcdjA@ballast.proxy.rlwy.net:54272/railway');
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 try {
     $pdo = new PDO(
-        "mysql:host=".DB_HOST.";dbname=".DB_NAME.";charset=utf8mb4",
+        "mysql:host=".DB_HOST.";port=54272;dbname=".DB_NAME.";charset=utf8mb4",
         DB_USER, DB_PASS,
         [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
