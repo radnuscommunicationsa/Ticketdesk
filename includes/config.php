@@ -7,10 +7,10 @@ define('DB_NAME', getenv('MYSQLDATABASE'));
 define('DB_PORT', getenv('MYSQLPORT') ?: 3306);
 
 // Site URL (auto detect)
-define('SITE_URL', getenv('RAILWAY_STATIC_URL') 
-    ? 'https://' . getenv('RAILWAY_STATIC_URL') 
+define('SITE_URL', getenv('RAILWAY_PUBLIC_DOMAIN') 
+    ? 'https://' . getenv('RAILWAY_PUBLIC_DOMAIN') 
     : 'http://localhost');
-
+    
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 try {

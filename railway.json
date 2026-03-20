@@ -4,7 +4,6 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "php artisan migrate --force && apache2-foreground",
     "restartPolicyType": "ON_FAILURE"
   }
 }
