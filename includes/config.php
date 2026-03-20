@@ -4,7 +4,7 @@ define('DB_USER', 'root');
 define('DB_PASS', 'YRmIFuKzMzelOzwkjEAjEMMEjCwYcdjA');
 define('DB_NAME', 'railway');
 define('DB_PORT', 3306);
-define('SITE_URL', 'https://ticketdesk.wuaze.com');
+define('SITE_URL', 'https://ticketdesk-production.up.railway.app');
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
