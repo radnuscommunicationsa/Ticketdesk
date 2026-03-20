@@ -17,4 +17,7 @@ RUN echo '<Directory /var/www/html>\n\
 </Directory>' > /etc/apache2/conf-available/custom.conf \
     && a2enconf custom
 
-EXPOSE 80
+# Fix Railway PORT issue
+RUN echo "Listen \${PORT:-80}" > /etc/apache2/ports.conf
+
+CMD bash -c "sed -i \"s/80/${PORT:-80}/g\" /etc/apache2/sites-available/000-default.conf && apache2-foreground"
