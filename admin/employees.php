@@ -26,8 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
     $data = [];
     foreach ($fields as $f) $data[$f] = trim($_POST[$f] ?? '');
     $data['password'] = trim($_POST['password'] ?? '');
-    if (!$data['name'] || !$data['emp_id'] || !$data['email'] || !$data['password']) {
-        $error = 'Name, Employee ID, Email and Password are required.';
+
+    // Auto generate emp_id if empty
+    if (empty($data['emp_id'])) {
+        $last = $pdo->query("SELECT emp_id FROM employees ORDER BY id DESC LIMIT 1")->fetchColumn();
+        $num = 1;
+        if ($last && preg_match('/(\d+)$/', $last, $m)) {
+            $num = (int)$m[1] + 1;
+        }
+        $data['emp_id'] = 'EMP-' . str_pad($num, 4, '0', STR_PAD_LEFT);
+    }
+
+    if (!$data['name'] || !$data['email'] || !$data['password']) {
+        $error = 'Name, Email and Password are required.';
     } else {
         try {
             $hashed = password_hash($data['password'], PASSWORD_DEFAULT);
@@ -52,8 +63,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
     $status    = trim($_POST['status']     ?? 'active');
     $new_pass  = trim($_POST['new_password'] ?? '');
 
-    if (!$name || !$emp_id || !$email) {
-        $error = 'Name, Employee ID and Email are required.';
+    // Auto generate emp_id if empty
+    if (empty($emp_id)) {
+        $last = $pdo->query("SELECT emp_id FROM employees ORDER BY id DESC LIMIT 1")->fetchColumn();
+        $num = 1;
+        if ($last && preg_match('/(\d+)$/', $last, $m)) {
+            $num = (int)$m[1] + 1;
+        }
+        $emp_id = 'EMP-' . str_pad($num, 4, '0', STR_PAD_LEFT);
+    }
+
+    if (!$name || !$email) {
+        $error = 'Name and Email are required.';
     } else {
         try {
             if ($new_pass) {
@@ -108,6 +129,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:0.9rem;}
 .fg label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);}
+.optional-tag{font-size:0.65rem;color:var(--text-muted);font-weight:400;text-transform:none;margin-left:4px;}
 </style>
 </head>
 <body>
@@ -231,7 +253,10 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
             <input type="hidden" name="action" value="add"/>
             <div class="form-grid-2">
               <div class="fg"><label>Full Name *</label><input type="text" name="name" placeholder="John Smith" required/></div>
-              <div class="fg"><label>Employee ID *</label><input type="text" name="emp_id" placeholder="EMP-0120" required/></div>
+              <div class="fg">
+                <label>Employee ID <span class="optional-tag">(optional — auto generated)</span></label>
+                <input type="text" name="emp_id" placeholder="EMP-0120 or leave blank"/>
+              </div>
             </div>
             <div class="fg"><label>Email *</label><input type="email" name="email" placeholder="john@company.com" required/></div>
             <div class="fg"><label>Password *</label><input type="password" name="password" placeholder="Set initial password" required/></div>
@@ -274,7 +299,10 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
             <input type="hidden" name="edit_id" id="edit_id"/>
             <div class="form-grid-2">
               <div class="fg"><label>Full Name *</label><input type="text" name="name" id="edit_name" required/></div>
-              <div class="fg"><label>Employee ID *</label><input type="text" name="emp_id" id="edit_emp_id" required/></div>
+              <div class="fg">
+                <label>Employee ID <span class="optional-tag">(optional)</span></label>
+                <input type="text" name="emp_id" id="edit_emp_id" placeholder="Leave blank to auto generate"/>
+              </div>
             </div>
             <div class="fg"><label>Email *</label><input type="email" name="email" id="edit_email" required/></div>
             <div class="form-grid-2">
@@ -333,7 +361,10 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
         <input type="hidden" name="role" value="admin"/>
         <div class="form-grid-2">
           <div class="fg"><label>Full Name *</label><input type="text" name="name" id="ea_name" required/></div>
-          <div class="fg"><label>Admin ID *</label><input type="text" name="emp_id" id="ea_emp_id" required/></div>
+          <div class="fg">
+            <label>Admin ID <span class="optional-tag">(optional)</span></label>
+            <input type="text" name="emp_id" id="ea_emp_id" placeholder="Leave blank to auto generate"/>
+          </div>
         </div>
         <div class="fg"><label>Email *</label><input type="email" name="email" id="ea_email" required/></div>
         <div class="form-grid-2">
@@ -378,13 +409,11 @@ function openEditEmp(e) {
     document.getElementById('edit_status').value  = e.status || 'active';
     document.getElementById('editModal').classList.add('open');
 }
-// Close on overlay click
 ['addModal','editModal','editAdminModal'].forEach(function(id){
     document.getElementById(id).addEventListener('click', function(e){
         if(e.target === this) this.classList.remove('open');
     });
 });
-
 function openEditAdmin(a) {
     document.getElementById('ea_id').value      = a.id;
     document.getElementById('ea_name').value    = a.name;

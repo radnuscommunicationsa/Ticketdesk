@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? SITE_URL . '/admin/dashboard.php'
                 : SITE_URL . '/employee/dashboard.php');
         } else {
-            $error = 'Invalid Employee ID or password.';
+            $error = 'Invalid Employee ID / Email or password.';
         }
     } else {
-        $error = 'Please enter Employee ID and password.';
+        $error = 'Please enter Employee ID / Email and password.';
     }
 }
 ?>
@@ -57,8 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST">
       <div class="form-group">
-        <label>Employee ID</label>
-        <input type="text" name="email" placeholder="EMP-0001" value="<?= sanitize($_POST['email'] ?? '') ?>" required autofocus/>
+        <label>Employee ID / Email</label>
+        <input type="text" name="email" placeholder="EMP-0001 or you@company.com" value="<?= sanitize($_POST['email'] ?? '') ?>" required autofocus/>
       </div>
       <div class="form-group" style="margin-top:1rem">
         <label>Password</label>

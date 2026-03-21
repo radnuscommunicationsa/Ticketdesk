@@ -65,6 +65,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
 <style>
 .profile-avatar { width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:#fff;margin:0 auto 1rem;box-shadow:0 4px 16px var(--red-glow); }
 .notif-badge { background:#c62828;color:#fff;font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;vertical-align:top; }
+.btn-disabled { opacity:0.5 !important; cursor:not-allowed !important; pointer-events:none !important; }
 </style>
 </head>
 <body>
@@ -153,11 +154,11 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
       <div class="card">
         <div class="card-header"><div class="card-title">🔒 Change Password</div></div>
         <div class="card-body">
-          <form method="POST">
+          <form method="POST" id="pass-form">
             <input type="hidden" name="action" value="password"/>
             <div class="form-group" style="margin-bottom:1rem">
               <label>Current Password *</label>
-              <input type="password" name="current_password" placeholder="Enter current password" required/>
+              <input type="password" name="current_password" placeholder="Enter current password" required id="cp-current"/>
             </div>
             <div class="form-group" style="margin-bottom:1rem">
               <label>New Password *</label>
@@ -176,7 +177,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
               <div id="strength-label" style="font-size:0.7rem;margin-top:3px;color:var(--text-muted)"></div>
             </div>
             <div style="display:flex;justify-content:flex-end">
-              <button type="submit" class="btn btn-primary">🔒 Update Password</button>
+              <button type="submit" class="btn btn-primary btn-disabled" id="pass-btn" disabled>🔒 Update Password</button>
             </div>
           </form>
         </div>
@@ -223,45 +224,46 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
 </div>
 
 <script>
-// Password strength checker
-document.getElementById('np').addEventListener('input', function(){
-    var v = this.value, score = 0, 
-        bar = document.getElementById('strength-bar'), 
-        lbl = document.getElementById('strength-label'),
-        btn = document.querySelector('button[type="submit"]');
-    
-    if(v.length >= 6) score++;
+var passBtn = document.getElementById('pass-btn');
+var npInput = document.getElementById('np');
+
+function checkPasswordReady() {
+    var v = npInput.value;
+    var bar = document.getElementById('strength-bar');
+    var lbl = document.getElementById('strength-label');
+    var score = 0;
+
+    if(v.length >= 6)  score++;
     if(v.length >= 10) score++;
     if(/[A-Z]/.test(v)) score++;
     if(/[0-9]/.test(v)) score++;
     if(/[^A-Za-z0-9]/.test(v)) score++;
-    
+
     var colors = ['#e53935','#e53935','#fb8c00','#f9a825','#2e7d32'];
     var labels = ['','Very Weak','Weak','Good','Strong'];
-    
+
     bar.style.width = (score * 20) + '%';
     bar.style.background = colors[score] || '#e53935';
     lbl.textContent = labels[score] || '';
     lbl.style.color = colors[score] || '#e53935';
-    
-    // Enable button only if 6+ characters
-    if(v.length >= 6){
-        btn.disabled = false;
-        btn.style.opacity = '1';
-    } else {
-        btn.disabled = true;
-        btn.style.opacity = '0.5';
-    }
-});
 
-// Initially disable button
-window.onload = function(){
-    var btn = document.querySelector('form [name="action"][value="password"]')
-        .closest('form')
-        .querySelector('button[type="submit"]');
-    btn.disabled = true;
-    btn.style.opacity = '0.5';
+    // Enable button only if 6+ characters
+    if(v.length >= 6) {
+        passBtn.disabled = false;
+        passBtn.classList.remove('btn-disabled');
+        passBtn.style.opacity = '1';
+        passBtn.style.cursor = 'pointer';
+        passBtn.style.pointerEvents = 'auto';
+    } else {
+        passBtn.disabled = true;
+        passBtn.classList.add('btn-disabled');
+        passBtn.style.opacity = '0.5';
+        passBtn.style.cursor = 'not-allowed';
+        passBtn.style.pointerEvents = 'none';
+    }
 }
+
+npInput.addEventListener('input', checkPasswordReady);
 </script>
 <script src="<?= SITE_URL ?>/assets/js/theme.js"></script>
 </body>
