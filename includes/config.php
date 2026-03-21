@@ -1,9 +1,17 @@
 <?php
-define('DB_HOST', getenv('MYSQLHOST') ?: 'mysql.railway.internal');
-define('DB_USER', getenv('MYSQLUSER') ?: 'root');
-define('DB_PASS', getenv('MYSQLPASSWORD') ?: '');
-define('DB_NAME', getenv('MYSQLDATABASE') ?: 'railway');
-define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
+<?php
+// Debug - remove after fix
+$host = getenv('MYSQLHOST');
+$user = getenv('MYSQLUSER');  
+$pass = getenv('MYSQLPASSWORD');
+$name = getenv('MYSQLDATABASE');
+$port = getenv('MYSQLPORT') ?: '3306';
+
+define('DB_HOST', $host ?: 'mysql.railway.internal');
+define('DB_USER', $user ?: 'root');
+define('DB_PASS', $pass ?: 'MirzYGprFgACSPcpHmIFRpsxLxGGFYNw');
+define('DB_NAME', $name ?: 'railway');
+define('DB_PORT', $port);
 
 define('SITE_URL', getenv('RAILWAY_PUBLIC_DOMAIN')
     ? 'https://' . getenv('RAILWAY_PUBLIC_DOMAIN')
