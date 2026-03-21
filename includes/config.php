@@ -1,6 +1,7 @@
 <?php
 // Railway environment variables use pannrom
-define('DB_HOST', getenv('MYSQLHOST'));
+$mysqlhost = getenv('MYSQLHOST') ?: 'ballast.proxy.rlwy.net';
+define('DB_HOST', $mysqlhost);
 define('DB_USER', getenv('MYSQLUSER'));
 define('DB_PASS', getenv('MYSQLPASSWORD'));
 define('DB_NAME', getenv('MYSQLDATABASE'));
@@ -14,7 +15,7 @@ define('SITE_URL', getenv('RAILWAY_PUBLIC_DOMAIN')
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 try {
-    $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+    $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4;unix_socket=";
 
     $pdo = new PDO($dsn, DB_USER, DB_PASS, [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
