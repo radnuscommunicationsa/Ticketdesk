@@ -7,12 +7,12 @@ if (isLoggedIn()) {
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email    = trim($_POST['email'] ?? '');
+    $login    = trim($_POST['email'] ?? '');
     $password = trim($_POST['password'] ?? '');
 
-    if ($email && $password) {
-        $stmt = $pdo->prepare("SELECT * FROM employees WHERE email = ? AND status = 'active'");
-        $stmt->execute([$email]);
+    if ($login && $password) {
+        $stmt = $pdo->prepare("SELECT * FROM employees WHERE (emp_id = ? OR email = ?) AND status = 'active'");
+        $stmt->execute([$login, $login]);
         $user = $stmt->fetch();
 
         if ($user && password_verify($password, $user['password'])) {
@@ -27,10 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? SITE_URL . '/admin/dashboard.php'
                 : SITE_URL . '/employee/dashboard.php');
         } else {
-            $error = 'Invalid email or password.';
+            $error = 'Invalid Employee ID or password.';
         }
     } else {
-        $error = 'Please enter email and password.';
+        $error = 'Please enter Employee ID and password.';
     }
 }
 ?>
@@ -57,8 +57,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <form method="POST">
       <div class="form-group">
-        <label>Email Address</label>
-        <input type="email" name="email" placeholder="you@company.com" value="<?= sanitize($_POST['email'] ?? '') ?>" required autofocus/>
+        <label>Employee ID</label>
+        <input type="text" name="email" placeholder="EMP-0001" value="<?= sanitize($_POST['email'] ?? '') ?>" required autofocus/>
       </div>
       <div class="form-group" style="margin-top:1rem">
         <label>Password</label>
@@ -69,11 +69,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </button>
     </form>
 
-<div class="login-footer">
-  <p>Contact IT Support for login help</p>
-  <p style="margin-top:4px">📧 itsupport@yourcompany.com</p>
-</div>
-</div>
+    <div class="login-footer">
+      <p>Contact IT Support for login help</p>
+      <p style="margin-top:4px">📧 itsupport@yourcompany.com</p>
+    </div>
+  </div>
 </div>
 <script src="<?= SITE_URL ?>/assets/js/theme.js"></script>
 </body>
