@@ -66,6 +66,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
 .profile-avatar { width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:#fff;margin:0 auto 1rem;box-shadow:0 4px 16px var(--red-glow); }
 .notif-badge { background:#c62828;color:#fff;font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;vertical-align:top; }
 .btn-disabled { opacity:0.5 !important; cursor:not-allowed !important; pointer-events:none !important; }
+.match-msg { font-size:0.7rem; margin-top:4px; }
 </style>
 </head>
 <body>
@@ -113,8 +114,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
     <?php if ($success): ?><div class="alert alert-success">✅ <?= $success ?></div><?php endif; ?>
     <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
-
+    <div class="profile-resp-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
       <!-- Profile Info Card -->
       <div class="card">
         <div class="card-header"><div class="card-title">👤 Personal Information</div></div>
@@ -167,6 +167,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
             <div class="form-group" style="margin-bottom:1rem">
               <label>Confirm New Password *</label>
               <input type="password" name="confirm_password" placeholder="Re-enter new password" required id="cp"/>
+              <div id="match-msg" class="match-msg"></div>
             </div>
             <!-- Password strength bar -->
             <div style="margin-bottom:1rem">
@@ -199,7 +200,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
         $stats->execute([$uid]);
         $stats = $stats->fetch();
         ?>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem">
+        <div class="ticket-stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem">
           <div style="text-align:center;padding:1rem;background:var(--bg-mid);border-radius:8px;border:1px solid var(--border)">
             <div style="font-size:1.8rem;font-weight:700;color:var(--red-primary)"><?= $stats['total'] ?></div>
             <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Total Raised</div>
@@ -224,46 +225,68 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
 </div>
 
 <script>
-var passBtn = document.getElementById('pass-btn');
-var npInput = document.getElementById('np');
+var passBtn  = document.getElementById('pass-btn');
+var npInput  = document.getElementById('np');
+var cpInput  = document.getElementById('cp');
+var matchMsg = document.getElementById('match-msg');
 
 function checkPasswordReady() {
-    var v = npInput.value;
-    var bar = document.getElementById('strength-bar');
-    var lbl = document.getElementById('strength-label');
-    var score = 0;
+    var newVal     = npInput.value;
+    var confirmVal = cpInput.value;
+    var bar        = document.getElementById('strength-bar');
+    var lbl        = document.getElementById('strength-label');
+    var score      = 0;
 
-    if(v.length >= 6)  score++;
-    if(v.length >= 10) score++;
-    if(/[A-Z]/.test(v)) score++;
-    if(/[0-9]/.test(v)) score++;
-    if(/[^A-Za-z0-9]/.test(v)) score++;
+    // Strength check
+    if(newVal.length >= 6)          score++;
+    if(newVal.length >= 10)         score++;
+    if(/[A-Z]/.test(newVal))        score++;
+    if(/[0-9]/.test(newVal))        score++;
+    if(/[^A-Za-z0-9]/.test(newVal)) score++;
 
     var colors = ['#e53935','#e53935','#fb8c00','#f9a825','#2e7d32'];
     var labels = ['','Very Weak','Weak','Good','Strong'];
 
-    bar.style.width = (score * 20) + '%';
+    bar.style.width      = (score * 20) + '%';
     bar.style.background = colors[score] || '#e53935';
-    lbl.textContent = labels[score] || '';
-    lbl.style.color = colors[score] || '#e53935';
+    lbl.textContent      = labels[score] || '';
+    lbl.style.color      = colors[score] || '#e53935';
 
-    // Enable button only if 6+ characters
-    if(v.length >= 6) {
+    // Match check
+    var isLongEnough  = newVal.length >= 6;
+    var isMatching    = confirmVal.length > 0 && newVal === confirmVal;
+    var confirmFilled = confirmVal.length > 0;
+
+    if(confirmFilled) {
+        if(isMatching) {
+            matchMsg.textContent = '✅ Passwords match!';
+            matchMsg.style.color = '#2e7d32';
+        } else {
+            matchMsg.textContent = '❌ Passwords do not match!';
+            matchMsg.style.color = '#e53935';
+        }
+    } else {
+        matchMsg.textContent = '';
+    }
+
+    // Enable button only if: 6+ chars AND confirm matches AND confirm not empty
+    if(isLongEnough && isMatching) {
         passBtn.disabled = false;
         passBtn.classList.remove('btn-disabled');
-        passBtn.style.opacity = '1';
-        passBtn.style.cursor = 'pointer';
+        passBtn.style.opacity      = '1';
+        passBtn.style.cursor       = 'pointer';
         passBtn.style.pointerEvents = 'auto';
     } else {
         passBtn.disabled = true;
         passBtn.classList.add('btn-disabled');
-        passBtn.style.opacity = '0.5';
-        passBtn.style.cursor = 'not-allowed';
+        passBtn.style.opacity      = '0.5';
+        passBtn.style.cursor       = 'not-allowed';
         passBtn.style.pointerEvents = 'none';
     }
 }
 
 npInput.addEventListener('input', checkPasswordReady);
+cpInput.addEventListener('input', checkPasswordReady);
 </script>
 <script src="<?= SITE_URL ?>/assets/js/theme.js"></script>
 </body>
