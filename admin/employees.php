@@ -4,6 +4,7 @@ requireAdmin();
 $admin_notif_count = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE emp_id=" . (int)$_SESSION['user_id'] . " AND is_read=0")->fetchColumn();
 
 $success = $error = '';
+$errors = [];
 
 // ── Delete Employee ──
 if (isset($_GET['delete'])) {
@@ -27,21 +28,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
     foreach ($fields as $f) $data[$f] = trim($_POST[$f] ?? '');
     $data['password'] = trim($_POST['password'] ?? '');
 
-    // ✅ Fixed Auto generate emp_id if empty
-    if (empty($data['emp_id'])) {
-        do {
-            $max = $pdo->query("SELECT MAX(CAST(emp_id AS UNSIGNED)) FROM employees")->fetchColumn();
-            $num = ($max ? (int)$max : 0) + 1;
-            $data['emp_id'] = (string)$num;
-            $exists = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE emp_id = ?");
-            $exists->execute([$data['emp_id']]);
-        } while ($exists->fetchColumn() > 0);
+    // ── Validation ──
+    if (empty($data['name'])) {
+        $errors['name'] = 'Full name is required.';
+    } elseif (strlen($data['name']) < 2) {
+        $errors['name'] = 'Name must be at least 2 characters.';
+    } elseif (!preg_match('/^[a-zA-Z\s]+$/', $data['name'])) {
+        $errors['name'] = 'Name must contain letters only.';
     }
 
-    // ✅ Email is now optional
-    if (!$data['name'] || !$data['password']) {
-        $error = 'Name and Password are required.';
-    } else {
+    if (!empty($data['emp_id'])) {
+        if (!preg_match('/^[a-zA-Z0-9\-]+$/', $data['emp_id'])) {
+            $errors['emp_id'] = 'Employee ID can only contain letters, numbers, and hyphens.';
+        } else {
+            $check = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE emp_id = ?");
+            $check->execute([$data['emp_id']]);
+            if ($check->fetchColumn() > 0) {
+                $errors['emp_id'] = 'This Employee ID is already taken. Please use a different one.';
+            }
+        }
+    }
+
+    if (!empty($data['email'])) {
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = 'Please enter a valid email address.';
+        } else {
+            $check = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE email = ?");
+            $check->execute([$data['email']]);
+            if ($check->fetchColumn() > 0) {
+                $errors['email'] = 'This email is already registered to another employee.';
+            }
+        }
+    }
+
+    if (empty($data['password'])) {
+        $errors['password'] = 'Password is required.';
+    } elseif (strlen($data['password']) < 6) {
+        $errors['password'] = 'Password must be at least 6 characters.';
+    }
+
+    if (!empty($data['phone']) && !preg_match('/^[0-9\+\-\s\(\)]{7,15}$/', $data['phone'])) {
+        $errors['phone'] = 'Please enter a valid phone number.';
+    }
+
+    if (empty($data['department'])) {
+        $errors['department'] = 'Please select a department.';
+    }
+
+    // ── Insert only if no errors ──
+    if (empty($errors)) {
+        if (empty($data['emp_id'])) {
+            do {
+                $max = $pdo->query("SELECT MAX(CAST(emp_id AS UNSIGNED)) FROM employees")->fetchColumn();
+                $num = ($max ? (int)$max : 0) + 1;
+                $data['emp_id'] = (string)$num;
+                $exists = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE emp_id = ?");
+                $exists->execute([$data['emp_id']]);
+            } while ($exists->fetchColumn() > 0);
+        }
+
         try {
             $hashed = password_hash($data['password'], PASSWORD_DEFAULT);
             $pdo->prepare("INSERT INTO employees (emp_id,name,email,password,department,phone,role) VALUES (?,?,?,?,?,?,?)")
@@ -49,13 +94,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
             $success = "Employee {$data['name']} added successfully.";
         } catch (PDOException $e) {
             if (strpos($e->getMessage(), 'emp_id') !== false) {
-                $error = 'Employee ID already exists. Please use a different ID.';
+                $errors['emp_id'] = 'Employee ID already exists. Please use a different ID.';
             } elseif (strpos($e->getMessage(), 'email') !== false) {
-                $error = 'This email is already registered to another employee.';
+                $errors['email'] = 'This email is already registered to another employee.';
             } else {
-                $error = 'Employee ID or Email already exists. (' . $e->getMessage() . ')';
+                $error = 'Something went wrong: ' . $e->getMessage();
             }
         }
+    }
+
+    if (!empty($errors)) {
+        $error = 'Please fix the errors below.';
     }
 }
 
@@ -71,21 +120,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
     $status    = trim($_POST['status']     ?? 'active');
     $new_pass  = trim($_POST['new_password'] ?? '');
 
-    // ✅ Fixed Auto generate emp_id if empty
-    if (empty($emp_id)) {
-        do {
-            $max = $pdo->query("SELECT MAX(CAST(emp_id AS UNSIGNED)) FROM employees")->fetchColumn();
-            $num = ($max ? (int)$max : 0) + 1;
-            $emp_id = (string)$num;
-            $exists = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE emp_id = ? AND id != ?");
-            $exists->execute([$emp_id, $edit_id]);
-        } while ($exists->fetchColumn() > 0);
+    // ── Validation ──
+    if (empty($name)) {
+        $errors['edit_name'] = 'Full name is required.';
+    } elseif (strlen($name) < 2) {
+        $errors['edit_name'] = 'Name must be at least 2 characters.';
+    } elseif (!preg_match('/^[a-zA-Z\s]+$/', $name)) {
+        $errors['edit_name'] = 'Name must contain letters only.';
     }
 
-    // ✅ Email is now optional
-    if (!$name) {
-        $error = 'Name is required.';
-    } else {
+    if (!empty($emp_id)) {
+        if (!preg_match('/^[a-zA-Z0-9\-]+$/', $emp_id)) {
+            $errors['edit_emp_id'] = 'Employee ID can only contain letters, numbers, and hyphens.';
+        } else {
+            $check = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE emp_id = ? AND id != ?");
+            $check->execute([$emp_id, $edit_id]);
+            if ($check->fetchColumn() > 0) {
+                $errors['edit_emp_id'] = 'This Employee ID is already taken by another employee.';
+            }
+        }
+    }
+
+    if (!empty($email)) {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['edit_email'] = 'Please enter a valid email address.';
+        } else {
+            $check = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE email = ? AND id != ?");
+            $check->execute([$email, $edit_id]);
+            if ($check->fetchColumn() > 0) {
+                $errors['edit_email'] = 'This email is already registered to another employee.';
+            }
+        }
+    }
+
+    if (!empty($new_pass) && strlen($new_pass) < 6) {
+        $errors['edit_password'] = 'New password must be at least 6 characters.';
+    }
+
+    if (!empty($phone) && !preg_match('/^[0-9\+\-\s\(\)]{7,15}$/', $phone)) {
+        $errors['edit_phone'] = 'Please enter a valid phone number.';
+    }
+
+    if (empty($dept)) {
+        $errors['edit_department'] = 'Please select a department.';
+    }
+
+    if (!in_array($role, ['employee', 'admin'])) {
+        $errors['edit_role'] = 'Invalid role selected.';
+    }
+
+    if (!in_array($status, ['active', 'inactive'])) {
+        $errors['edit_status'] = 'Invalid status selected.';
+    }
+
+    // ── Update only if no errors ──
+    if (empty($errors)) {
+        if (empty($emp_id)) {
+            do {
+                $max = $pdo->query("SELECT MAX(CAST(emp_id AS UNSIGNED)) FROM employees")->fetchColumn();
+                $num = ($max ? (int)$max : 0) + 1;
+                $emp_id = (string)$num;
+                $exists = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE emp_id = ? AND id != ?");
+                $exists->execute([$emp_id, $edit_id]);
+            } while ($exists->fetchColumn() > 0);
+        }
+
         try {
             if ($new_pass) {
                 $hashed = password_hash($new_pass, PASSWORD_DEFAULT);
@@ -98,13 +197,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
             $success = "Employee <strong>$name</strong> updated successfully.";
         } catch (PDOException $e) {
             if (strpos($e->getMessage(), 'emp_id') !== false) {
-                $error = 'Employee ID already exists for another employee.';
+                $errors['edit_emp_id'] = 'Employee ID already exists for another employee.';
             } elseif (strpos($e->getMessage(), 'email') !== false) {
-                $error = 'This email is already registered to another employee.';
+                $errors['edit_email'] = 'This email is already registered to another employee.';
             } else {
-                $error = 'Employee ID or Email already exists. (' . $e->getMessage() . ')';
+                $error = 'Something went wrong: ' . $e->getMessage();
             }
         }
+    }
+
+    if (!empty($errors)) {
+        $error = 'Please fix the errors below.';
     }
 }
 
@@ -146,6 +249,8 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:0.9rem;}
 .fg label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);}
 .optional-tag{font-size:0.65rem;color:var(--text-muted);font-weight:400;text-transform:none;margin-left:4px;}
+.field-error{color:#ef9a9a;font-size:0.72rem;margin-top:2px;display:block;}
+.input-invalid{border-color:#c62828 !important;}
 </style>
 </head>
 <body>
@@ -257,35 +362,60 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
           <form method="POST">
             <input type="hidden" name="action" value="add"/>
             <div class="form-grid-2">
-              <div class="fg"><label>Full Name *</label><input type="text" name="name" placeholder="John Smith" required/></div>
+              <div class="fg">
+                <label>Full Name *</label>
+                <input type="text" name="name" placeholder="John Smith"
+                       value="<?= sanitize($_POST['name'] ?? '') ?>"
+                       class="<?= isset($errors['name']) ? 'input-invalid' : '' ?>" required/>
+                <?php if (isset($errors['name'])): ?><span class="field-error">⚠ <?= sanitize($errors['name']) ?></span><?php endif; ?>
+              </div>
               <div class="fg">
                 <label>Employee ID <span class="optional-tag">(optional — auto generated)</span></label>
-                <input type="text" name="emp_id" placeholder="e.g. 795 or leave blank"/>
+                <input type="text" name="emp_id" placeholder="e.g. 795 or leave blank"
+                       value="<?= sanitize($_POST['emp_id'] ?? '') ?>"
+                       class="<?= isset($errors['emp_id']) ? 'input-invalid' : '' ?>"/>
+                <?php if (isset($errors['emp_id'])): ?><span class="field-error">⚠ <?= sanitize($errors['emp_id']) ?></span><?php endif; ?>
               </div>
             </div>
-            <!-- ✅ Email optional -->
             <div class="fg">
               <label>Email <span class="optional-tag">(optional)</span></label>
-              <input type="email" name="email" placeholder="john@company.com"/>
+              <input type="email" name="email" placeholder="john@company.com"
+                     value="<?= sanitize($_POST['email'] ?? '') ?>"
+                     class="<?= isset($errors['email']) ? 'input-invalid' : '' ?>"/>
+              <?php if (isset($errors['email'])): ?><span class="field-error">⚠ <?= sanitize($errors['email']) ?></span><?php endif; ?>
             </div>
-            <div class="fg"><label>Password *</label><input type="password" name="password" placeholder="Set initial password" required/></div>
+            <div class="fg">
+              <label>Password *</label>
+              <input type="password" name="password" placeholder="Min. 6 characters"
+                     class="<?= isset($errors['password']) ? 'input-invalid' : '' ?>" required/>
+              <?php if (isset($errors['password'])): ?><span class="field-error">⚠ <?= sanitize($errors['password']) ?></span><?php endif; ?>
+            </div>
             <div class="form-grid-2">
               <div class="fg">
                 <label>Department</label>
-                <select name="department">
+                <select name="department" class="<?= isset($errors['department']) ? 'input-invalid' : '' ?>">
                   <option value="">— Select —</option>
-                  <?php foreach($dept_list as $d): ?><option><?= $d ?></option><?php endforeach; ?>
+                  <?php foreach($dept_list as $d): ?>
+                    <option <?= (($_POST['department'] ?? '') === $d) ? 'selected' : '' ?>><?= $d ?></option>
+                  <?php endforeach; ?>
                 </select>
+                <?php if (isset($errors['department'])): ?><span class="field-error">⚠ <?= sanitize($errors['department']) ?></span><?php endif; ?>
               </div>
               <div class="fg">
                 <label>Role</label>
                 <select name="role">
-                  <option value="employee">Employee</option>
-                  <option value="admin">Admin</option>
+                  <option value="employee" <?= (($_POST['role'] ?? '') === 'employee') ? 'selected' : '' ?>>Employee</option>
+                  <option value="admin" <?= (($_POST['role'] ?? '') === 'admin') ? 'selected' : '' ?>>Admin</option>
                 </select>
               </div>
             </div>
-            <div class="fg"><label>Phone</label><input type="tel" name="phone" placeholder="Optional"/></div>
+            <div class="fg">
+              <label>Phone</label>
+              <input type="tel" name="phone" placeholder="Optional"
+                     value="<?= sanitize($_POST['phone'] ?? '') ?>"
+                     class="<?= isset($errors['phone']) ? 'input-invalid' : '' ?>"/>
+              <?php if (isset($errors['phone'])): ?><span class="field-error">⚠ <?= sanitize($errors['phone']) ?></span><?php endif; ?>
+            </div>
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:0.5rem">
               <button type="button" class="btn btn-ghost" onclick="document.getElementById('addModal').classList.remove('open')">Cancel</button>
               <button type="submit" class="btn btn-primary">➕ Add Employee</button>
@@ -307,24 +437,33 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
             <input type="hidden" name="action" value="edit"/>
             <input type="hidden" name="edit_id" id="edit_id"/>
             <div class="form-grid-2">
-              <div class="fg"><label>Full Name *</label><input type="text" name="name" id="edit_name" required/></div>
+              <div class="fg">
+                <label>Full Name *</label>
+                <input type="text" name="name" id="edit_name"
+                       class="<?= isset($errors['edit_name']) ? 'input-invalid' : '' ?>" required/>
+                <?php if (isset($errors['edit_name'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_name']) ?></span><?php endif; ?>
+              </div>
               <div class="fg">
                 <label>Employee ID <span class="optional-tag">(optional)</span></label>
-                <input type="text" name="emp_id" id="edit_emp_id" placeholder="Leave blank to auto generate"/>
+                <input type="text" name="emp_id" id="edit_emp_id" placeholder="Leave blank to auto generate"
+                       class="<?= isset($errors['edit_emp_id']) ? 'input-invalid' : '' ?>"/>
+                <?php if (isset($errors['edit_emp_id'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_emp_id']) ?></span><?php endif; ?>
               </div>
             </div>
-            <!-- ✅ Email optional -->
             <div class="fg">
               <label>Email <span class="optional-tag">(optional)</span></label>
-              <input type="email" name="email" id="edit_email"/>
+              <input type="email" name="email" id="edit_email"
+                     class="<?= isset($errors['edit_email']) ? 'input-invalid' : '' ?>"/>
+              <?php if (isset($errors['edit_email'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_email']) ?></span><?php endif; ?>
             </div>
             <div class="form-grid-2">
               <div class="fg">
                 <label>Department</label>
-                <select name="department" id="edit_dept">
+                <select name="department" id="edit_dept" class="<?= isset($errors['edit_department']) ? 'input-invalid' : '' ?>">
                   <option value="">— Select —</option>
                   <?php foreach($dept_list as $d): ?><option value="<?= $d ?>"><?= $d ?></option><?php endforeach; ?>
                 </select>
+                <?php if (isset($errors['edit_department'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_department']) ?></span><?php endif; ?>
               </div>
               <div class="fg">
                 <label>Role</label>
@@ -335,7 +474,12 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
               </div>
             </div>
             <div class="form-grid-2">
-              <div class="fg"><label>Phone</label><input type="tel" name="phone" id="edit_phone"/></div>
+              <div class="fg">
+                <label>Phone</label>
+                <input type="tel" name="phone" id="edit_phone"
+                       class="<?= isset($errors['edit_phone']) ? 'input-invalid' : '' ?>"/>
+                <?php if (isset($errors['edit_phone'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_phone']) ?></span><?php endif; ?>
+              </div>
               <div class="fg">
                 <label>Status</label>
                 <select name="status" id="edit_status">
@@ -346,7 +490,9 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
             </div>
             <div class="fg">
               <label>New Password <span style="color:var(--text-muted);font-weight:400;text-transform:none">(leave blank = no change)</span></label>
-              <input type="password" name="new_password" placeholder="Enter new password to change..."/>
+              <input type="password" name="new_password" placeholder="Min. 6 characters to change..."
+                     class="<?= isset($errors['edit_password']) ? 'input-invalid' : '' ?>"/>
+              <?php if (isset($errors['edit_password'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_password']) ?></span><?php endif; ?>
             </div>
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:0.5rem">
               <button type="button" class="btn btn-ghost" onclick="document.getElementById('editModal').classList.remove('open')">Cancel</button>
@@ -373,13 +519,15 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
         <input type="hidden" name="edit_id" id="ea_id"/>
         <input type="hidden" name="role" value="admin"/>
         <div class="form-grid-2">
-          <div class="fg"><label>Full Name *</label><input type="text" name="name" id="ea_name" required/></div>
+          <div class="fg">
+            <label>Full Name *</label>
+            <input type="text" name="name" id="ea_name" required/>
+          </div>
           <div class="fg">
             <label>Admin ID <span class="optional-tag">(optional)</span></label>
             <input type="text" name="emp_id" id="ea_emp_id" placeholder="Leave blank to auto generate"/>
           </div>
         </div>
-        <!-- ✅ Email optional -->
         <div class="fg">
           <label>Email <span class="optional-tag">(optional)</span></label>
           <input type="email" name="email" id="ea_email"/>
@@ -441,8 +589,11 @@ function openEditAdmin(a) {
     document.getElementById('ea_status').value  = a.status || 'active';
     document.getElementById('editAdminModal').classList.add('open');
 }
-<?php if ($error): ?>
+<?php if ($error && ($_POST['action'] ?? '') === 'add'): ?>
 document.getElementById('addModal').classList.add('open');
+<?php endif; ?>
+<?php if ($error && ($_POST['action'] ?? '') === 'edit'): ?>
+document.getElementById('editModal').classList.add('open');
 <?php endif; ?>
 </script>
 <script src="<?= SITE_URL ?>/assets/js/theme.js"></script>

@@ -6,11 +6,29 @@ if (isLoggedIn()) {
 }
 
 $error = '';
+$errors = [];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $login    = trim($_POST['email'] ?? '');
     $password = trim($_POST['password'] ?? '');
 
-    if ($login && $password) {
+    // ── Validation ──
+    if (empty($login)) {
+        $errors['email'] = 'Employee ID or Email is required.';
+    } elseif (strlen($login) < 3) {
+        $errors['email'] = 'Employee ID or Email must be at least 3 characters.';
+    } elseif (strpos($login, '@') !== false && !filter_var($login, FILTER_VALIDATE_EMAIL)) {
+        $errors['email'] = 'Please enter a valid email address.';
+    }
+
+    if (empty($password)) {
+        $errors['password'] = 'Password is required.';
+    } elseif (strlen($password) < 4) {
+        $errors['password'] = 'Password must be at least 4 characters.';
+    }
+
+    // ── Attempt login only if no validation errors ──
+    if (empty($errors)) {
         $stmt = $pdo->prepare("SELECT * FROM employees WHERE (emp_id = ? OR email = ?) AND status = 'active'");
         $stmt->execute([$login, $login]);
         $user = $stmt->fetch();
@@ -26,11 +44,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect($user['role'] === 'admin'
                 ? SITE_URL . '/admin/dashboard.php'
                 : SITE_URL . '/employee/dashboard.php');
-        } else {
-            $error = 'Invalid Employee ID / Email or password.';
+        } elseif ($user && !password_verify($password, $user['password'])) {
+            $errors['password'] = 'Incorrect password. Please try again.';
+        } elseif (!$user) {
+            $errors['email'] = 'No active account found with this Employee ID or Email.';
         }
-    } else {
-        $error = 'Please enter Employee ID / Email and password.';
+    }
+
+    // Set general error summary
+    if (!empty($errors)) {
+        $error = 'Please fix the errors below and try again.';
     }
 }
 ?>
@@ -41,6 +64,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Login — TicketDesk</title>
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
+<style>
+.field-error{color:#ef9a9a;font-size:0.72rem;margin-top:3px;display:block;}
+.input-invalid{border-color:#c62828 !important;}
+</style>
 </head>
 <body>
 <div class="login-wrap">
@@ -58,12 +85,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="POST">
       <div class="form-group">
         <label>Employee ID / Email</label>
-        <input type="text" name="email" placeholder="EMP-0001 or you@company.com" value="<?= sanitize($_POST['email'] ?? '') ?>" required autofocus/>
+        <input type="text" name="email"
+               placeholder="EMP-0001 or you@company.com"
+               value="<?= sanitize($_POST['email'] ?? '') ?>"
+               class="<?= isset($errors['email']) ? 'input-invalid' : '' ?>"
+               autofocus/>
+        <?php if (isset($errors['email'])): ?>
+          <span class="field-error">⚠ <?= sanitize($errors['email']) ?></span>
+        <?php endif; ?>
       </div>
+
       <div class="form-group" style="margin-top:1rem">
         <label>Password</label>
-        <input type="password" name="password" placeholder="Enter your password" required/>
+        <input type="password" name="password"
+               placeholder="Enter your password"
+               class="<?= isset($errors['password']) ? 'input-invalid' : '' ?>"/>
+        <?php if (isset($errors['password'])): ?>
+          <span class="field-error">⚠ <?= sanitize($errors['password']) ?></span>
+        <?php endif; ?>
       </div>
+
       <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:1.5rem">
         🔐 Sign In
       </button>
