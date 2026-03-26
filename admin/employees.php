@@ -27,12 +27,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
     foreach ($fields as $f) $data[$f] = trim($_POST[$f] ?? '');
     $data['password'] = trim($_POST['password'] ?? '');
 
-    // Auto generate emp_id if empty
+    // ✅ Fixed Auto generate emp_id if empty
     if (empty($data['emp_id'])) {
-        $last = $pdo->query("SELECT emp_id FROM employees ORDER BY id DESC LIMIT 1")->fetchColumn();
-        $num = 1;
-        if ($last && preg_match('/(\d+)$/', $last, $m)) $num = (int)$m[1] + 1;
-        $data['emp_id'] = 'EMP-' . str_pad($num, 4, '0', STR_PAD_LEFT);
+        do {
+            $max = $pdo->query("SELECT MAX(CAST(emp_id AS UNSIGNED)) FROM employees")->fetchColumn();
+            $num = ($max ? (int)$max : 0) + 1;
+            $data['emp_id'] = (string)$num;
+            $exists = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE emp_id = ?");
+            $exists->execute([$data['emp_id']]);
+        } while ($exists->fetchColumn() > 0);
     }
 
     // ✅ Email is now optional
@@ -45,7 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
                 ->execute([$data['emp_id'],$data['name'],$data['email'],$hashed,$data['department'],$data['phone'],$data['role']]);
             $success = "Employee {$data['name']} added successfully.";
         } catch (PDOException $e) {
-            $error = 'Employee ID or Email already exists.';
+            if (strpos($e->getMessage(), 'emp_id') !== false) {
+                $error = 'Employee ID already exists. Please use a different ID.';
+            } elseif (strpos($e->getMessage(), 'email') !== false) {
+                $error = 'This email is already registered to another employee.';
+            } else {
+                $error = 'Employee ID or Email already exists. (' . $e->getMessage() . ')';
+            }
         }
     }
 }
@@ -62,12 +71,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
     $status    = trim($_POST['status']     ?? 'active');
     $new_pass  = trim($_POST['new_password'] ?? '');
 
-    // Auto generate emp_id if empty
+    // ✅ Fixed Auto generate emp_id if empty
     if (empty($emp_id)) {
-        $last = $pdo->query("SELECT emp_id FROM employees ORDER BY id DESC LIMIT 1")->fetchColumn();
-        $num = 1;
-        if ($last && preg_match('/(\d+)$/', $last, $m)) $num = (int)$m[1] + 1;
-        $emp_id = 'EMP-' . str_pad($num, 4, '0', STR_PAD_LEFT);
+        do {
+            $max = $pdo->query("SELECT MAX(CAST(emp_id AS UNSIGNED)) FROM employees")->fetchColumn();
+            $num = ($max ? (int)$max : 0) + 1;
+            $emp_id = (string)$num;
+            $exists = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE emp_id = ? AND id != ?");
+            $exists->execute([$emp_id, $edit_id]);
+        } while ($exists->fetchColumn() > 0);
     }
 
     // ✅ Email is now optional
@@ -85,7 +97,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
             }
             $success = "Employee <strong>$name</strong> updated successfully.";
         } catch (PDOException $e) {
-            $error = 'Employee ID or Email already exists for another employee.';
+            if (strpos($e->getMessage(), 'emp_id') !== false) {
+                $error = 'Employee ID already exists for another employee.';
+            } elseif (strpos($e->getMessage(), 'email') !== false) {
+                $error = 'This email is already registered to another employee.';
+            } else {
+                $error = 'Employee ID or Email already exists. (' . $e->getMessage() . ')';
+            }
         }
     }
 }
@@ -242,7 +260,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
               <div class="fg"><label>Full Name *</label><input type="text" name="name" placeholder="John Smith" required/></div>
               <div class="fg">
                 <label>Employee ID <span class="optional-tag">(optional — auto generated)</span></label>
-                <input type="text" name="emp_id" placeholder="EMP-0120 or leave blank"/>
+                <input type="text" name="emp_id" placeholder="e.g. 795 or leave blank"/>
               </div>
             </div>
             <!-- ✅ Email optional -->
