@@ -31,14 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
     if (empty($data['emp_id'])) {
         $last = $pdo->query("SELECT emp_id FROM employees ORDER BY id DESC LIMIT 1")->fetchColumn();
         $num = 1;
-        if ($last && preg_match('/(\d+)$/', $last, $m)) {
-            $num = (int)$m[1] + 1;
-        }
+        if ($last && preg_match('/(\d+)$/', $last, $m)) $num = (int)$m[1] + 1;
         $data['emp_id'] = 'EMP-' . str_pad($num, 4, '0', STR_PAD_LEFT);
     }
 
-    if (!$data['name'] || !$data['email'] || !$data['password']) {
-        $error = 'Name, Email and Password are required.';
+    // ✅ Email is now optional
+    if (!$data['name'] || !$data['password']) {
+        $error = 'Name and Password are required.';
     } else {
         try {
             $hashed = password_hash($data['password'], PASSWORD_DEFAULT);
@@ -67,14 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
     if (empty($emp_id)) {
         $last = $pdo->query("SELECT emp_id FROM employees ORDER BY id DESC LIMIT 1")->fetchColumn();
         $num = 1;
-        if ($last && preg_match('/(\d+)$/', $last, $m)) {
-            $num = (int)$m[1] + 1;
-        }
+        if ($last && preg_match('/(\d+)$/', $last, $m)) $num = (int)$m[1] + 1;
         $emp_id = 'EMP-' . str_pad($num, 4, '0', STR_PAD_LEFT);
     }
 
-    if (!$name || !$email) {
-        $error = 'Name and Email are required.';
+    // ✅ Email is now optional
+    if (!$name) {
+        $error = 'Name is required.';
     } else {
         try {
             if ($new_pass) {
@@ -159,21 +157,16 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
     <?php if ($success): ?><div class="alert alert-success">✅ <?= $success ?></div><?php endif; ?>
     <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
 
-    <!-- Add Button -->
     <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
       <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('open')">➕ Add New Employee</button>
     </div>
 
     <!-- Employee Table -->
     <div class="card">
-      <div class="card-header">
-        <div class="card-title">All Employees (<?= count($employees) ?>)</div>
-      </div>
+      <div class="card-header"><div class="card-title">All Employees (<?= count($employees) ?>)</div></div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr><th>Employee</th><th>ID</th><th>Department</th><th>Email</th><th>Tickets</th><th>Open</th><th>Actions</th></tr>
-          </thead>
+          <thead><tr><th>Employee</th><th>ID</th><th>Department</th><th>Email</th><th>Tickets</th><th>Open</th><th>Actions</th></tr></thead>
           <tbody>
             <?php foreach ($employees as $e): ?>
             <tr>
@@ -182,7 +175,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                   <div class="emp-avatar" style="background:<?= avatarColor($e['name']) ?>"><?= initials($e['name']) ?></div>
                   <div>
                     <div style="font-weight:500"><?= sanitize($e['name']) ?></div>
-                    <div class="text-muted"><?= $e['status'] === 'active' ? '<span class="online-dot">● Active</span>' : '<span class="offline-dot">● Inactive</span>' ?></div>
+                    <div class="text-muted"><?= $e['status']==='active' ? '<span class="online-dot">● Active</span>' : '<span class="offline-dot">● Inactive</span>' ?></div>
                   </div>
                 </div>
               </td>
@@ -190,7 +183,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
               <td><span class="dept-badge"><?= sanitize($e['department']) ?></span></td>
               <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($e['email']) ?></td>
               <td><span class="side-badge"><?= $e['ticket_count'] ?></span></td>
-              <td><?= $e['open_tickets'] > 0 ? '<span class="side-badge red">'.$e['open_tickets'].'</span>' : '-' ?></td>
+              <td><?= $e['open_tickets']>0 ? '<span class="side-badge red">'.$e['open_tickets'].'</span>' : '-' ?></td>
               <td style="display:flex;gap:5px;flex-wrap:wrap">
                 <a href="<?= SITE_URL ?>/admin/tickets.php?q=<?= urlencode($e['name']) ?>" class="btn btn-ghost btn-xs">Tickets</a>
                 <button class="btn btn-primary btn-xs" onclick="openEditEmp(<?= htmlspecialchars(json_encode($e)) ?>)">✏️ Edit</button>
@@ -208,14 +201,10 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 
     <!-- Admin Table -->
     <div class="card" style="margin-top:1.5rem">
-      <div class="card-header">
-        <div class="card-title">🛡️ Admins (<?= count($admins) ?>)</div>
-      </div>
+      <div class="card-header"><div class="card-title">🛡️ Admins (<?= count($admins) ?>)</div></div>
       <div class="table-wrap">
         <table>
-          <thead>
-            <tr><th>Admin</th><th>ID</th><th>Email</th><th>Phone</th><th>Actions</th></tr>
-          </thead>
+          <thead><tr><th>Admin</th><th>ID</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
           <tbody>
             <?php foreach ($admins as $a): ?>
             <tr>
@@ -231,9 +220,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
               <td class="ticket-id"><?= sanitize($a['emp_id']) ?></td>
               <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($a['email']) ?></td>
               <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($a['phone'] ?: '—') ?></td>
-              <td>
-                <button class="btn btn-primary btn-xs" onclick="openEditAdmin(<?= htmlspecialchars(json_encode($a)) ?>)">✏️ Edit</button>
-              </td>
+              <td><button class="btn btn-primary btn-xs" onclick="openEditAdmin(<?= htmlspecialchars(json_encode($a)) ?>)">✏️ Edit</button></td>
             </tr>
             <?php endforeach; ?>
           </tbody>
@@ -241,7 +228,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
       </div>
     </div>
 
-    <!-- ══ ADD EMPLOYEE MODAL ══ -->
+    <!-- ADD MODAL -->
     <div class="modal-overlay" id="addModal">
       <div class="modal-box">
         <div class="modal-header">
@@ -258,7 +245,11 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                 <input type="text" name="emp_id" placeholder="EMP-0120 or leave blank"/>
               </div>
             </div>
-            <div class="fg"><label>Email *</label><input type="email" name="email" placeholder="john@company.com" required/></div>
+            <!-- ✅ Email optional -->
+            <div class="fg">
+              <label>Email <span class="optional-tag">(optional)</span></label>
+              <input type="email" name="email" placeholder="john@company.com"/>
+            </div>
             <div class="fg"><label>Password *</label><input type="password" name="password" placeholder="Set initial password" required/></div>
             <div class="form-grid-2">
               <div class="fg">
@@ -286,7 +277,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
       </div>
     </div>
 
-    <!-- ══ EDIT EMPLOYEE MODAL ══ -->
+    <!-- EDIT EMPLOYEE MODAL -->
     <div class="modal-overlay" id="editModal">
       <div class="modal-box">
         <div class="modal-header">
@@ -304,7 +295,11 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                 <input type="text" name="emp_id" id="edit_emp_id" placeholder="Leave blank to auto generate"/>
               </div>
             </div>
-            <div class="fg"><label>Email *</label><input type="email" name="email" id="edit_email" required/></div>
+            <!-- ✅ Email optional -->
+            <div class="fg">
+              <label>Email <span class="optional-tag">(optional)</span></label>
+              <input type="email" name="email" id="edit_email"/>
+            </div>
             <div class="form-grid-2">
               <div class="fg">
                 <label>Department</label>
@@ -347,7 +342,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
   </main>
 </div>
 
-<!-- ══ EDIT ADMIN MODAL ══ -->
+<!-- EDIT ADMIN MODAL -->
 <div class="modal-overlay" id="editAdminModal">
   <div class="modal-box">
     <div class="modal-header">
@@ -366,7 +361,11 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
             <input type="text" name="emp_id" id="ea_emp_id" placeholder="Leave blank to auto generate"/>
           </div>
         </div>
-        <div class="fg"><label>Email *</label><input type="email" name="email" id="ea_email" required/></div>
+        <!-- ✅ Email optional -->
+        <div class="fg">
+          <label>Email <span class="optional-tag">(optional)</span></label>
+          <input type="email" name="email" id="ea_email"/>
+        </div>
         <div class="form-grid-2">
           <div class="fg"><label>Phone</label><input type="tel" name="phone" id="ea_phone"/></div>
           <div class="fg">
@@ -402,7 +401,7 @@ function openEditEmp(e) {
     document.getElementById('edit_id').value      = e.id;
     document.getElementById('edit_name').value    = e.name;
     document.getElementById('edit_emp_id').value  = e.emp_id;
-    document.getElementById('edit_email').value   = e.email;
+    document.getElementById('edit_email').value   = e.email || '';
     document.getElementById('edit_phone').value   = e.phone || '';
     document.getElementById('edit_dept').value    = e.department || '';
     document.getElementById('edit_role').value    = e.role || 'employee';
@@ -418,10 +417,10 @@ function openEditAdmin(a) {
     document.getElementById('ea_id').value      = a.id;
     document.getElementById('ea_name').value    = a.name;
     document.getElementById('ea_emp_id').value  = a.emp_id;
-    document.getElementById('ea_email').value   = a.email;
-    document.getElementById('ea_phone').value   = a.phone   || '';
+    document.getElementById('ea_email').value   = a.email || '';
+    document.getElementById('ea_phone').value   = a.phone || '';
     document.getElementById('ea_dept').value    = a.department || '';
-    document.getElementById('ea_status').value  = a.status  || 'active';
+    document.getElementById('ea_status').value  = a.status || 'active';
     document.getElementById('editAdminModal').classList.add('open');
 }
 <?php if ($error): ?>
