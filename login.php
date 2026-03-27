@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="login-footer">
       <p>Contact IT Support for login help</p>
-      <p style="margin-top:4px">📧 itsupport@yourcompany.com</p>
+      <p style="margin-top:4px">📧 radnuscommunicationsa@gmail.com</p>
     </div>
   </div>
 </div>
