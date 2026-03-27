@@ -379,7 +379,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
             </div>
             <div class="fg">
               <label>Email <span class="optional-tag">(optional)</span></label>
-              <input type="email" name="email" placeholder="john@company.com"
+              <input type="email" name="email" placeholder=""
                      value="<?= sanitize($_POST['email'] ?? '') ?>"
                      class="<?= isset($errors['email']) ? 'input-invalid' : '' ?>"/>
               <?php if (isset($errors['email'])): ?><span class="field-error">⚠ <?= sanitize($errors['email']) ?></span><?php endif; ?>
