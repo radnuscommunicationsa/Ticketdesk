@@ -1,27 +1,39 @@
 <?php
 // ============================================================
 // ✅ AUTO DETECT: Works on BOTH Localhost & Railway
-// No need to change anything when switching environments!
 // ============================================================
 
-$is_railway = getenv('MYSQLHOST') !== false; // true on Railway, false on localhost
+// ── Strongest possible Railway detection ──
+$railway_host   = getenv('MYSQLHOST');
+$railway_domain = getenv('RAILWAY_PUBLIC_DOMAIN');
+$railway_env    = getenv('RAILWAY_ENVIRONMENT');
+$railway_user   = getenv('MYSQLUSER');
+
+$is_railway = (
+    !empty($railway_host) ||
+    !empty($railway_domain) ||
+    !empty($railway_env) ||
+    !empty($railway_user)
+);
 
 if ($is_railway) {
     // ── 🚂 RAILWAY (Production) ──
-    define('DB_HOST', getenv('MYSQLHOST'));
-    define('DB_USER', getenv('MYSQLUSER'));
-    define('DB_PASS', getenv('MYSQLPASSWORD'));
-    define('DB_NAME', getenv('MYSQLDATABASE'));
-    define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
-    define('SITE_URL', 'https://' . getenv('RAILWAY_PUBLIC_DOMAIN'));
+    define('DB_HOST', !empty($railway_host) ? $railway_host : 'mysql.railway.internal');
+    define('DB_USER', getenv('MYSQLUSER')     ?: 'root');
+    define('DB_PASS', getenv('MYSQLPASSWORD') ?: '');
+    define('DB_NAME', getenv('MYSQLDATABASE') ?: 'railway');
+    define('DB_PORT', getenv('MYSQLPORT')     ?: '3306');
+    define('SITE_URL', !empty($railway_domain)
+        ? 'https://' . $railway_domain
+        : 'https://ticketdesk-production.up.railway.app');
 } else {
     // ── 💻 LOCALHOST (Development) ──
     define('DB_HOST', 'localhost');
-    define('DB_USER', 'root');       // ← change to your local MySQL username
-    define('DB_PASS', '');           // ← change to your local MySQL password
-    define('DB_NAME', 'railway');    // ← change to your local database name
+    define('DB_USER', 'root');
+    define('DB_PASS', '');             // ← blank for XAMPP, or enter your password
+    define('DB_NAME', 'ticketdesk');   // ✅ matches your local phpMyAdmin DB name
     define('DB_PORT', '3306');
-    define('SITE_URL', 'http://localhost/ticketdesk'); // ← change to your project folder name
+    define('SITE_URL', 'http://localhost/ticketdesk');
 }
 
 if (session_status() === PHP_SESSION_NONE) session_start();
@@ -37,7 +49,8 @@ try {
     die('<div style="font-family:sans-serif;padding:40px;background:#1a1a2e;color:#ef9a9a;text-align:center">
         <h2>Database Connection Failed ❌</h2>
         <p>' . htmlspecialchars($e->getMessage()) . '</p>
-        <p style="font-size:0.85rem;margin-top:8px">Environment: ' . ($is_railway ? '🚂 Railway' : '💻 Localhost') . '</p>
+        <p style="font-size:0.85rem;margin-top:8px;color:#aaa">Environment: ' . ($is_railway ? '🚂 Railway' : '💻 Localhost') . '</p>
+        <p style="font-size:0.8rem;margin-top:4px;color:#888">Host: ' . DB_HOST . ' | DB: ' . DB_NAME . ' | Port: ' . DB_PORT . '</p>
     </div>');
 }
 
