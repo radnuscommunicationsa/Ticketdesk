@@ -1,20 +1,28 @@
 <?php
+// ============================================================
+// ✅ AUTO DETECT: Works on BOTH Localhost & Railway
+// No need to change anything when switching environments!
+// ============================================================
 
-$host = getenv('MYSQLHOST');
-$user = getenv('MYSQLUSER');
-$pass = getenv('MYSQLPASSWORD');
-$name = getenv('MYSQLDATABASE');
-$port = getenv('MYSQLPORT') ?: '3306';
+$is_railway = getenv('MYSQLHOST') !== false; // true on Railway, false on localhost
 
-define('DB_HOST', $host ?: 'mysql.railway.internal');
-define('DB_USER', $user ?: 'root');
-define('DB_PASS', $pass ?: 'MirzYGprFgACSPcpHmIFRpsxLxGGFYNw');
-define('DB_NAME', $name ?: 'railway');
-define('DB_PORT', $port);
-
-define('SITE_URL', getenv('RAILWAY_PUBLIC_DOMAIN')
-    ? 'https://' . getenv('RAILWAY_PUBLIC_DOMAIN')
-    : 'http://localhost');
+if ($is_railway) {
+    // ── 🚂 RAILWAY (Production) ──
+    define('DB_HOST', getenv('MYSQLHOST'));
+    define('DB_USER', getenv('MYSQLUSER'));
+    define('DB_PASS', getenv('MYSQLPASSWORD'));
+    define('DB_NAME', getenv('MYSQLDATABASE'));
+    define('DB_PORT', getenv('MYSQLPORT') ?: '3306');
+    define('SITE_URL', 'https://' . getenv('RAILWAY_PUBLIC_DOMAIN'));
+} else {
+    // ── 💻 LOCALHOST (Development) ──
+    define('DB_HOST', 'localhost');
+    define('DB_USER', 'root');       // ← change to your local MySQL username
+    define('DB_PASS', '');           // ← change to your local MySQL password
+    define('DB_NAME', 'railway');    // ← change to your local database name
+    define('DB_PORT', '3306');
+    define('SITE_URL', 'http://localhost/ticketdesk'); // ← change to your project folder name
+}
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -23,12 +31,13 @@ try {
     $pdo = new PDO($dsn, DB_USER, DB_PASS, [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES   => false,  // ✅ Fixed: was true, caused duplicate key issues
+        PDO::ATTR_EMULATE_PREPARES   => false,
     ]);
 } catch (PDOException $e) {
     die('<div style="font-family:sans-serif;padding:40px;background:#1a1a2e;color:#ef9a9a;text-align:center">
         <h2>Database Connection Failed ❌</h2>
         <p>' . htmlspecialchars($e->getMessage()) . '</p>
+        <p style="font-size:0.85rem;margin-top:8px">Environment: ' . ($is_railway ? '🚂 Railway' : '💻 Localhost') . '</p>
     </div>');
 }
 
