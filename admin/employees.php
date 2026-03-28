@@ -17,7 +17,7 @@ if (isset($_GET['delete'])) {
         $pdo->exec("DELETE FROM ticket_logs WHERE ticket_id IN ($in)");
     }
     $pdo->prepare("DELETE FROM tickets WHERE emp_id = ?")->execute([$del_id]);
-    $pdo->prepare("DELETE FROM employees WHERE id = ? AND role = 'employee'")->execute([$del_id]);
+    $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$del_id]);
     $success = 'Employee deleted successfully.';
 }
 
@@ -27,8 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
     $data = [];
     foreach ($fields as $f) $data[$f] = trim($_POST[$f] ?? '');
     $data['password'] = trim($_POST['password'] ?? '');
+    $data['email'] = !empty($data['email']) ? $data['email'] : null;
 
-    // ── Validation ──
     if (empty($data['name'])) {
         $errors['name'] = 'Full name is required.';
     } elseif (strlen($data['name']) < 2) {
@@ -75,7 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
         $errors['department'] = 'Please select a department.';
     }
 
-    // ── Insert only if no errors ──
     if (empty($errors)) {
         if (empty($data['emp_id'])) {
             do {
@@ -92,6 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
             $pdo->prepare("INSERT INTO employees (emp_id,name,email,password,department,phone,role) VALUES (?,?,?,?,?,?,?)")
                 ->execute([$data['emp_id'],$data['name'],$data['email'],$hashed,$data['department'],$data['phone'],$data['role']]);
             $success = "Employee {$data['name']} added successfully.";
+            $_POST = [];
+            $errors = [];
         } catch (PDOException $e) {
             if (strpos($e->getMessage(), 'emp_id') !== false) {
                 $errors['emp_id'] = 'Employee ID already exists. Please use a different ID.';
@@ -119,8 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
     $role      = trim($_POST['role']       ?? 'employee');
     $status    = trim($_POST['status']     ?? 'active');
     $new_pass  = trim($_POST['new_password'] ?? '');
+    $email = !empty($email) ? $email : null;
 
-    // ── Validation ──
     if (empty($name)) {
         $errors['edit_name'] = 'Full name is required.';
     } elseif (strlen($name) < 2) {
@@ -173,7 +174,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
         $errors['edit_status'] = 'Invalid status selected.';
     }
 
-    // ── Update only if no errors ──
     if (empty($errors)) {
         if (empty($emp_id)) {
             do {
@@ -195,6 +195,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
                     ->execute([$name,$emp_id,$email,$dept,$phone,$role,$status,$edit_id]);
             }
             $success = "Employee <strong>$name</strong> updated successfully.";
+            $_POST = [];
+            $errors = [];
         } catch (PDOException $e) {
             if (strpos($e->getMessage(), 'emp_id') !== false) {
                 $errors['edit_emp_id'] = 'Employee ID already exists for another employee.';
@@ -227,7 +229,7 @@ $admins = $pdo->query("SELECT * FROM employees WHERE role='admin' ORDER BY name"
 function avatarColor($n){$c=['#1565c0','#6a1b9a','#00695c','#c62828','#e65100','#2e7d32','#37474f','#4527a0'];$h=0;foreach(str_split($n)as $ch)$h+=ord($ch);return $c[$h%count($c)];}
 function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):''));}
 
-$dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development','Digital Marketing','Sales','Design','Admission','HR','Telecalling','IT Software Support','Stock','Distribution'];
+$dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development','Digital Marketing','Sales','Design','Admission','HR','Telecalling','Software Support','Stock','Distribution','System Administrator'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -281,7 +283,8 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
     <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
 
     <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
-      <button class="btn btn-primary" onclick="document.getElementById('addModal').classList.add('open')">➕ Add New Employee</button>
+      <!-- ✅ FIXED: calls openAddModal() which resets form before opening -->
+      <button class="btn btn-primary" onclick="openAddModal()">➕ Add New Employee</button>
     </div>
 
     <!-- Employee Table -->
@@ -304,7 +307,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
               </td>
               <td class="ticket-id"><?= sanitize($e['emp_id']) ?></td>
               <td><span class="dept-badge"><?= sanitize($e['department']) ?></span></td>
-              <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($e['email']) ?></td>
+              <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($e['email'] ?? '') ?></td>
               <td><span class="side-badge"><?= $e['ticket_count'] ?></span></td>
               <td><?= $e['open_tickets']>0 ? '<span class="side-badge red">'.$e['open_tickets'].'</span>' : '-' ?></td>
               <td style="display:flex;gap:5px;flex-wrap:wrap">
@@ -341,9 +344,14 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                 </div>
               </td>
               <td class="ticket-id"><?= sanitize($a['emp_id']) ?></td>
-              <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($a['email']) ?></td>
+              <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($a['email'] ?? '') ?></td>
               <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($a['phone'] ?: '—') ?></td>
-              <td><button class="btn btn-primary btn-xs" onclick="openEditAdmin(<?= htmlspecialchars(json_encode($a)) ?>)">✏️ Edit</button></td>
+              <td style="display:flex;gap:5px;flex-wrap:wrap">
+                <button class="btn btn-primary btn-xs" onclick="openEditAdmin(<?= htmlspecialchars(json_encode($a)) ?>)">✏️ Edit</button>
+                <?php if ($a['id'] !== (int)$_SESSION['user_id']): ?>
+                  <a href="?delete=<?= $a['id'] ?>" class="btn btn-danger btn-xs" onclick="return confirm('Delete this admin? This cannot be undone.')">Delete</a>
+                <?php endif; ?>
+              </td>
             </tr>
             <?php endforeach; ?>
           </tbody>
@@ -359,7 +367,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
           <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('open')">✕</button>
         </div>
         <div class="modal-body">
-          <form method="POST">
+          <form method="POST" id="addForm">
             <input type="hidden" name="action" value="add"/>
             <div class="form-grid-2">
               <div class="fg">
@@ -379,7 +387,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
             </div>
             <div class="fg">
               <label>Email <span class="optional-tag">(optional)</span></label>
-              <input type="email" name="email" placeholder=""
+              <input type="email" name="email" placeholder="john@company.com"
                      value="<?= sanitize($_POST['email'] ?? '') ?>"
                      class="<?= isset($errors['email']) ? 'input-invalid' : '' ?>"/>
               <?php if (isset($errors['email'])): ?><span class="field-error">⚠ <?= sanitize($errors['email']) ?></span><?php endif; ?>
@@ -563,6 +571,19 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 </div>
 
 <script>
+// ✅ FIXED: Resets form + clears all error styles before opening add modal
+function openAddModal() {
+    var form = document.getElementById('addForm');
+    form.reset();
+    form.querySelectorAll('.input-invalid').forEach(function(el) {
+        el.classList.remove('input-invalid');
+    });
+    form.querySelectorAll('.field-error').forEach(function(el) {
+        el.style.display = 'none';
+    });
+    document.getElementById('addModal').classList.add('open');
+}
+
 function openEditEmp(e) {
     document.getElementById('edit_id').value      = e.id;
     document.getElementById('edit_name').value    = e.name;
@@ -574,11 +595,13 @@ function openEditEmp(e) {
     document.getElementById('edit_status').value  = e.status || 'active';
     document.getElementById('editModal').classList.add('open');
 }
+
 ['addModal','editModal','editAdminModal'].forEach(function(id){
     document.getElementById(id).addEventListener('click', function(e){
         if(e.target === this) this.classList.remove('open');
     });
 });
+
 function openEditAdmin(a) {
     document.getElementById('ea_id').value      = a.id;
     document.getElementById('ea_name').value    = a.name;
@@ -589,6 +612,7 @@ function openEditAdmin(a) {
     document.getElementById('ea_status').value  = a.status || 'active';
     document.getElementById('editAdminModal').classList.add('open');
 }
+
 <?php if ($error && ($_POST['action'] ?? '') === 'add'): ?>
 document.getElementById('addModal').classList.add('open');
 <?php endif; ?>

@@ -1,10 +1,11 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
 
-// All employees password reset to 'password123'
-$newpass = password_hash('password123', PASSWORD_BCRYPT);
+$newPassword = password_hash('password', PASSWORD_DEFAULT);
 
-$pdo->exec("UPDATE employees SET password = '$newpass'");
+$stmt = $pdo->prepare("UPDATE employees SET password = ?, status = 'active', role = 'admin' WHERE id = 1");
+$stmt->execute([$newPassword]);
 
-echo "Done! All passwords reset to: password123";
+echo "Done! Rows updated: " . $stmt->rowCount();
+echo "<br>New hash: " . $newPassword;
 ?>
