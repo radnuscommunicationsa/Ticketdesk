@@ -9,16 +9,35 @@ $errors = [];
 // ── Delete Employee ──
 if (isset($_GET['delete'])) {
     $del_id = (int)$_GET['delete'];
-    $tickets = $pdo->prepare("SELECT id FROM tickets WHERE emp_id = ?");
-    $tickets->execute([$del_id]);
-    $ticket_ids = $tickets->fetchAll(PDO::FETCH_COLUMN);
-    if (!empty($ticket_ids)) {
-        $in = implode(',', $ticket_ids);
-        $pdo->exec("DELETE FROM ticket_logs WHERE ticket_id IN ($in)");
+
+    try {
+        // ✅ Step 1: Delete notifications for this employee
+        $pdo->prepare("DELETE FROM notifications WHERE emp_id = ?")->execute([$del_id]);
+
+        // ✅ Step 2: Delete ticket_logs where done_by = this employee
+        $pdo->prepare("DELETE FROM ticket_logs WHERE done_by = ?")->execute([$del_id]);
+
+        // ✅ Step 3: Get all ticket IDs for this employee
+        $tickets = $pdo->prepare("SELECT id FROM tickets WHERE emp_id = ?");
+        $tickets->execute([$del_id]);
+        $ticket_ids = $tickets->fetchAll(PDO::FETCH_COLUMN);
+
+        // ✅ Step 4: Delete ticket_logs for this employee's tickets
+        if (!empty($ticket_ids)) {
+            $in = implode(',', array_map('intval', $ticket_ids));
+            $pdo->exec("DELETE FROM ticket_logs WHERE ticket_id IN ($in)");
+        }
+
+        // ✅ Step 5: Delete tickets
+        $pdo->prepare("DELETE FROM tickets WHERE emp_id = ?")->execute([$del_id]);
+
+        // ✅ Step 6: Delete employee
+        $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$del_id]);
+
+        $success = 'Employee deleted successfully.';
+    } catch (PDOException $e) {
+        $error = 'Delete failed: ' . $e->getMessage();
     }
-    $pdo->prepare("DELETE FROM tickets WHERE emp_id = ?")->execute([$del_id]);
-    $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$del_id]);
-    $success = 'Employee deleted successfully.';
 }
 
 // ── Add Employee ──
@@ -283,7 +302,6 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
     <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
 
     <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
-      <!-- ✅ FIXED: calls openAddModal() which resets form before opening -->
       <button class="btn btn-primary" onclick="openAddModal()">➕ Add New Employee</button>
     </div>
 
@@ -571,19 +589,13 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 </div>
 
 <script>
-// ✅ FIXED: Resets form + clears all error styles before opening add modal
 function openAddModal() {
     var form = document.getElementById('addForm');
     form.reset();
-    form.querySelectorAll('.input-invalid').forEach(function(el) {
-        el.classList.remove('input-invalid');
-    });
-    form.querySelectorAll('.field-error').forEach(function(el) {
-        el.style.display = 'none';
-    });
+    form.querySelectorAll('.input-invalid').forEach(function(el){ el.classList.remove('input-invalid'); });
+    form.querySelectorAll('.field-error').forEach(function(el){ el.style.display = 'none'; });
     document.getElementById('addModal').classList.add('open');
 }
-
 function openEditEmp(e) {
     document.getElementById('edit_id').value      = e.id;
     document.getElementById('edit_name').value    = e.name;
@@ -595,13 +607,11 @@ function openEditEmp(e) {
     document.getElementById('edit_status').value  = e.status || 'active';
     document.getElementById('editModal').classList.add('open');
 }
-
 ['addModal','editModal','editAdminModal'].forEach(function(id){
     document.getElementById(id).addEventListener('click', function(e){
         if(e.target === this) this.classList.remove('open');
     });
 });
-
 function openEditAdmin(a) {
     document.getElementById('ea_id').value      = a.id;
     document.getElementById('ea_name').value    = a.name;
@@ -612,7 +622,6 @@ function openEditAdmin(a) {
     document.getElementById('ea_status').value  = a.status || 'active';
     document.getElementById('editAdminModal').classList.add('open');
 }
-
 <?php if ($error && ($_POST['action'] ?? '') === 'add'): ?>
 document.getElementById('addModal').classList.add('open');
 <?php endif; ?>
