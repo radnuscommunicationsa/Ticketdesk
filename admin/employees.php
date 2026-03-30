@@ -11,27 +11,27 @@ if (isset($_GET['delete'])) {
     $del_id = (int)$_GET['delete'];
 
     try {
-        // ✅ Step 1: Delete notifications for this employee
+        // <i class="fa-solid fa-check"></i> Step 1: Delete notifications for this employee
         $pdo->prepare("DELETE FROM notifications WHERE emp_id = ?")->execute([$del_id]);
 
-        // ✅ Step 2: Delete ticket_logs where done_by = this employee
+        // <i class="fa-solid fa-check"></i> Step 2: Delete ticket_logs where done_by = this employee
         $pdo->prepare("DELETE FROM ticket_logs WHERE done_by = ?")->execute([$del_id]);
 
-        // ✅ Step 3: Get all ticket IDs for this employee
+        // <i class="fa-solid fa-check"></i> Step 3: Get all ticket IDs for this employee
         $tickets = $pdo->prepare("SELECT id FROM tickets WHERE emp_id = ?");
         $tickets->execute([$del_id]);
         $ticket_ids = $tickets->fetchAll(PDO::FETCH_COLUMN);
 
-        // ✅ Step 4: Delete ticket_logs for this employee's tickets
+        // <i class="fa-solid fa-check"></i> Step 4: Delete ticket_logs for this employee's tickets
         if (!empty($ticket_ids)) {
             $in = implode(',', array_map('intval', $ticket_ids));
             $pdo->exec("DELETE FROM ticket_logs WHERE ticket_id IN ($in)");
         }
 
-        // ✅ Step 5: Delete tickets
+        // <i class="fa-solid fa-check"></i> Step 5: Delete tickets
         $pdo->prepare("DELETE FROM tickets WHERE emp_id = ?")->execute([$del_id]);
 
-        // ✅ Step 6: Delete employee
+        // <i class="fa-solid fa-check"></i> Step 6: Delete employee
         $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$del_id]);
 
         $success = 'Employee deleted successfully.';
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
     $data = [];
     foreach ($fields as $f) $data[$f] = trim($_POST[$f] ?? '');
     $data['password'] = trim($_POST['password'] ?? '');
-    $data['email'] = !empty($data['email']) ? $data['email'] : null;
+    $data['email'] = !empty(trim($_POST['email'] ?? '')) ? trim($_POST['email']) : null;
 
     if (empty($data['name'])) {
         $errors['name'] = 'Full name is required.';
@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit'
     $role      = trim($_POST['role']       ?? 'employee');
     $status    = trim($_POST['status']     ?? 'active');
     $new_pass  = trim($_POST['new_password'] ?? '');
-    $email = !empty($email) ? $email : null;
+    $email = !empty(trim($_POST['email'] ?? '')) ? trim($_POST['email']) : null;
 
     if (empty($name)) {
         $errors['edit_name'] = 'Full name is required.';
@@ -255,6 +255,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Employees — TicketDesk Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
@@ -276,7 +277,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon">🖥</div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-desktop"></i></div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php">Dashboard</a>
     <a href="tickets.php">Tickets</a>
@@ -284,7 +285,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
     <a href="employees.php" class="active">Employees</a>
   </div>
   <div class="topbar-right">
-    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">🔔<?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
+    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications"><i class="fa-solid fa-bell"></i><?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
     <a href="<?= SITE_URL ?>/logout.php" class="btn btn-ghost btn-sm">Logout</a>
   </div>
 </div>
@@ -298,11 +299,11 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
       <p>Manage your team members and their access</p>
     </div>
 
-    <?php if ($success): ?><div class="alert alert-success">✅ <?= $success ?></div><?php endif; ?>
-    <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
+    <?php if ($success): ?><div class="alert alert-success"><i class="fa-solid fa-check"></i> <?= $success ?></div><?php endif; ?>
+    <?php if ($error):   ?><div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($error) ?></div><?php endif; ?>
 
     <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
-      <button class="btn btn-primary" onclick="openAddModal()">➕ Add New Employee</button>
+      <button class="btn btn-primary" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> Add New Employee</button>
     </div>
 
     <!-- Employee Table -->
@@ -319,7 +320,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                   <div class="emp-avatar" style="background:<?= avatarColor($e['name']) ?>"><?= initials($e['name']) ?></div>
                   <div>
                     <div style="font-weight:500"><?= sanitize($e['name']) ?></div>
-                    <div class="text-muted"><?= $e['status']==='active' ? '<span class="online-dot">● Active</span>' : '<span class="offline-dot">● Inactive</span>' ?></div>
+                    <div class="text-muted"><?= $e['status']==='active' ? '<span class="online-dot"><i class="fa-solid fa-circle" style="font-size:0.5em"></i> Active</span>' : '<span class="offline-dot"><i class="fa-solid fa-circle" style="font-size:0.5em"></i> Inactive</span>' ?></div>
                   </div>
                 </div>
               </td>
@@ -330,7 +331,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
               <td><?= $e['open_tickets']>0 ? '<span class="side-badge red">'.$e['open_tickets'].'</span>' : '-' ?></td>
               <td style="display:flex;gap:5px;flex-wrap:wrap">
                 <a href="<?= SITE_URL ?>/admin/tickets.php?q=<?= urlencode($e['name']) ?>" class="btn btn-ghost btn-xs">Tickets</a>
-                <button class="btn btn-primary btn-xs" onclick="openEditEmp(<?= htmlspecialchars(json_encode($e)) ?>)">✏️ Edit</button>
+                <button class="btn btn-primary btn-xs" onclick="openEditEmp(<?= htmlspecialchars(json_encode($e)) ?>)"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
                 <a href="?delete=<?= $e['id'] ?>" class="btn btn-danger btn-xs" onclick="return confirm('Delete this employee AND all their tickets?')">Delete</a>
               </td>
             </tr>
@@ -345,7 +346,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 
     <!-- Admin Table -->
     <div class="card" style="margin-top:1.5rem">
-      <div class="card-header"><div class="card-title">🛡️ Admins (<?= count($admins) ?>)</div></div>
+      <div class="card-header"><div class="card-title"><i class="fa-solid fa-shield-halved"></i> Admins (<?= count($admins) ?>)</div></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Admin</th><th>ID</th><th>Email</th><th>Phone</th><th>Actions</th></tr></thead>
@@ -357,7 +358,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                   <div class="emp-avatar" style="background:#c62828"><?= initials($a['name']) ?></div>
                   <div>
                     <div style="font-weight:500"><?= sanitize($a['name']) ?></div>
-                    <div class="text-muted"><span style="color:var(--red-primary);font-size:0.7rem">● Admin</span></div>
+                    <div class="text-muted"><span style="color:var(--red-primary);font-size:0.7rem"><i class="fa-solid fa-circle" style="font-size:0.5em"></i> Admin</span></div>
                   </div>
                 </div>
               </td>
@@ -365,7 +366,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
               <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($a['email'] ?? '') ?></td>
               <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($a['phone'] ?: '—') ?></td>
               <td style="display:flex;gap:5px;flex-wrap:wrap">
-                <button class="btn btn-primary btn-xs" onclick="openEditAdmin(<?= htmlspecialchars(json_encode($a)) ?>)">✏️ Edit</button>
+                <button class="btn btn-primary btn-xs" onclick="openEditAdmin(<?= htmlspecialchars(json_encode($a)) ?>)"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
                 <?php if ($a['id'] !== (int)$_SESSION['user_id']): ?>
                   <a href="?delete=<?= $a['id'] ?>" class="btn btn-danger btn-xs" onclick="return confirm('Delete this admin? This cannot be undone.')">Delete</a>
                 <?php endif; ?>
@@ -381,8 +382,8 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
     <div class="modal-overlay" id="addModal">
       <div class="modal-box">
         <div class="modal-header">
-          <h3>➕ Add New Employee</h3>
-          <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('open')">✕</button>
+          <h3><i class="fa-solid fa-plus"></i> Add New Employee</h3>
+          <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('open')"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="modal-body">
           <form method="POST" id="addForm">
@@ -393,28 +394,32 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                 <input type="text" name="name" placeholder="John Smith"
                        value="<?= sanitize($_POST['name'] ?? '') ?>"
                        class="<?= isset($errors['name']) ? 'input-invalid' : '' ?>" required/>
-                <?php if (isset($errors['name'])): ?><span class="field-error">⚠ <?= sanitize($errors['name']) ?></span><?php endif; ?>
+                <?php if (isset($errors['name'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['name']) ?></span><?php endif; ?>
               </div>
               <div class="fg">
                 <label>Employee ID <span class="optional-tag">(optional — auto generated)</span></label>
                 <input type="text" name="emp_id" placeholder="e.g. 795 or leave blank"
                        value="<?= sanitize($_POST['emp_id'] ?? '') ?>"
                        class="<?= isset($errors['emp_id']) ? 'input-invalid' : '' ?>"/>
-                <?php if (isset($errors['emp_id'])): ?><span class="field-error">⚠ <?= sanitize($errors['emp_id']) ?></span><?php endif; ?>
+                <?php if (isset($errors['emp_id'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['emp_id']) ?></span><?php endif; ?>
               </div>
             </div>
             <div class="fg">
               <label>Email <span class="optional-tag">(optional)</span></label>
               <input type="email" name="email" placeholder="john@company.com"
                      value="<?= sanitize($_POST['email'] ?? '') ?>"
+                     autocomplete="off"
                      class="<?= isset($errors['email']) ? 'input-invalid' : '' ?>"/>
-              <?php if (isset($errors['email'])): ?><span class="field-error">⚠ <?= sanitize($errors['email']) ?></span><?php endif; ?>
+              <?php if (isset($errors['email'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['email']) ?></span><?php endif; ?>
             </div>
             <div class="fg">
               <label>Password *</label>
-              <input type="password" name="password" placeholder="Min. 6 characters"
+              <div class="pw-wrap">
+              <input type="password" name="password" placeholder="Min. 6 characters" id="add-pw"
                      class="<?= isset($errors['password']) ? 'input-invalid' : '' ?>" required/>
-              <?php if (isset($errors['password'])): ?><span class="field-error">⚠ <?= sanitize($errors['password']) ?></span><?php endif; ?>
+              <button type="button" class="pw-toggle" onclick="togglePw('add-pw', this)"><i class="fa-regular fa-eye"></i></button>
+              </div>
+              <?php if (isset($errors['password'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['password']) ?></span><?php endif; ?>
             </div>
             <div class="form-grid-2">
               <div class="fg">
@@ -425,7 +430,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                     <option <?= (($_POST['department'] ?? '') === $d) ? 'selected' : '' ?>><?= $d ?></option>
                   <?php endforeach; ?>
                 </select>
-                <?php if (isset($errors['department'])): ?><span class="field-error">⚠ <?= sanitize($errors['department']) ?></span><?php endif; ?>
+                <?php if (isset($errors['department'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['department']) ?></span><?php endif; ?>
               </div>
               <div class="fg">
                 <label>Role</label>
@@ -440,11 +445,11 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
               <input type="tel" name="phone" placeholder="Optional"
                      value="<?= sanitize($_POST['phone'] ?? '') ?>"
                      class="<?= isset($errors['phone']) ? 'input-invalid' : '' ?>"/>
-              <?php if (isset($errors['phone'])): ?><span class="field-error">⚠ <?= sanitize($errors['phone']) ?></span><?php endif; ?>
+              <?php if (isset($errors['phone'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['phone']) ?></span><?php endif; ?>
             </div>
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:0.5rem">
               <button type="button" class="btn btn-ghost" onclick="document.getElementById('addModal').classList.remove('open')">Cancel</button>
-              <button type="submit" class="btn btn-primary">➕ Add Employee</button>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Employee</button>
             </div>
           </form>
         </div>
@@ -455,8 +460,8 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
     <div class="modal-overlay" id="editModal">
       <div class="modal-box">
         <div class="modal-header">
-          <h3>✏️ Edit Employee</h3>
-          <button class="modal-close" onclick="document.getElementById('editModal').classList.remove('open')">✕</button>
+          <h3><i class="fa-solid fa-pen-to-square"></i> Edit Employee</h3>
+          <button class="modal-close" onclick="document.getElementById('editModal').classList.remove('open')"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="modal-body">
           <form method="POST">
@@ -467,20 +472,20 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                 <label>Full Name *</label>
                 <input type="text" name="name" id="edit_name"
                        class="<?= isset($errors['edit_name']) ? 'input-invalid' : '' ?>" required/>
-                <?php if (isset($errors['edit_name'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_name']) ?></span><?php endif; ?>
+                <?php if (isset($errors['edit_name'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['edit_name']) ?></span><?php endif; ?>
               </div>
               <div class="fg">
                 <label>Employee ID <span class="optional-tag">(optional)</span></label>
                 <input type="text" name="emp_id" id="edit_emp_id" placeholder="Leave blank to auto generate"
                        class="<?= isset($errors['edit_emp_id']) ? 'input-invalid' : '' ?>"/>
-                <?php if (isset($errors['edit_emp_id'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_emp_id']) ?></span><?php endif; ?>
+                <?php if (isset($errors['edit_emp_id'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['edit_emp_id']) ?></span><?php endif; ?>
               </div>
             </div>
             <div class="fg">
               <label>Email <span class="optional-tag">(optional)</span></label>
               <input type="email" name="email" id="edit_email"
                      class="<?= isset($errors['edit_email']) ? 'input-invalid' : '' ?>"/>
-              <?php if (isset($errors['edit_email'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_email']) ?></span><?php endif; ?>
+              <?php if (isset($errors['edit_email'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['edit_email']) ?></span><?php endif; ?>
             </div>
             <div class="form-grid-2">
               <div class="fg">
@@ -489,7 +494,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                   <option value="">— Select —</option>
                   <?php foreach($dept_list as $d): ?><option value="<?= $d ?>"><?= $d ?></option><?php endforeach; ?>
                 </select>
-                <?php if (isset($errors['edit_department'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_department']) ?></span><?php endif; ?>
+                <?php if (isset($errors['edit_department'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['edit_department']) ?></span><?php endif; ?>
               </div>
               <div class="fg">
                 <label>Role</label>
@@ -504,7 +509,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
                 <label>Phone</label>
                 <input type="tel" name="phone" id="edit_phone"
                        class="<?= isset($errors['edit_phone']) ? 'input-invalid' : '' ?>"/>
-                <?php if (isset($errors['edit_phone'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_phone']) ?></span><?php endif; ?>
+                <?php if (isset($errors['edit_phone'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['edit_phone']) ?></span><?php endif; ?>
               </div>
               <div class="fg">
                 <label>Status</label>
@@ -516,13 +521,16 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
             </div>
             <div class="fg">
               <label>New Password <span style="color:var(--text-muted);font-weight:400;text-transform:none">(leave blank = no change)</span></label>
-              <input type="password" name="new_password" placeholder="Min. 6 characters to change..."
+              <div class="pw-wrap">
+              <input type="password" name="new_password" placeholder="Min. 6 characters to change..." id="edit-pw"
                      class="<?= isset($errors['edit_password']) ? 'input-invalid' : '' ?>"/>
-              <?php if (isset($errors['edit_password'])): ?><span class="field-error">⚠ <?= sanitize($errors['edit_password']) ?></span><?php endif; ?>
+              <button type="button" class="pw-toggle" onclick="togglePw('edit-pw', this)"><i class="fa-regular fa-eye"></i></button>
+              </div>
+              <?php if (isset($errors['edit_password'])): ?><span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['edit_password']) ?></span><?php endif; ?>
             </div>
             <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:0.5rem">
               <button type="button" class="btn btn-ghost" onclick="document.getElementById('editModal').classList.remove('open')">Cancel</button>
-              <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
             </div>
           </form>
         </div>
@@ -536,8 +544,8 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 <div class="modal-overlay" id="editAdminModal">
   <div class="modal-box">
     <div class="modal-header">
-      <h3>🛡️ Edit Admin</h3>
-      <button class="modal-close" onclick="document.getElementById('editAdminModal').classList.remove('open')">✕</button>
+      <h3><i class="fa-solid fa-shield-halved"></i> Edit Admin</h3>
+      <button class="modal-close" onclick="document.getElementById('editAdminModal').classList.remove('open')"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="modal-body">
       <form method="POST">
@@ -577,11 +585,14 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
         </div>
         <div class="fg">
           <label>New Password <span style="color:var(--text-muted);font-weight:400;text-transform:none">(leave blank = no change)</span></label>
-          <input type="password" name="new_password" placeholder="Enter new password to change..."/>
+          <div class="pw-wrap">
+          <input type="password" name="new_password" placeholder="Enter new password to change..." id="admin-pw"/>
+          <button type="button" class="pw-toggle" onclick="togglePw('admin-pw', this)"><i class="fa-regular fa-eye"></i></button>
+          </div>
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:0.5rem">
           <button type="button" class="btn btn-ghost" onclick="document.getElementById('editAdminModal').classList.remove('open')">Cancel</button>
-          <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
         </div>
       </form>
     </div>
@@ -622,12 +633,23 @@ function openEditAdmin(a) {
     document.getElementById('ea_status').value  = a.status || 'active';
     document.getElementById('editAdminModal').classList.add('open');
 }
+
 <?php if ($error && ($_POST['action'] ?? '') === 'add'): ?>
 document.getElementById('addModal').classList.add('open');
 <?php endif; ?>
 <?php if ($error && ($_POST['action'] ?? '') === 'edit'): ?>
 document.getElementById('editModal').classList.add('open');
 <?php endif; ?>
+function togglePw(id, btn) {
+    var inp = document.getElementById(id);
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+    } else {
+        inp.type = 'password';
+        btn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+    }
+}
 </script>
 <script src="<?= SITE_URL ?>/assets/js/theme.js"></script>
 </body>

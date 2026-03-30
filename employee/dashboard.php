@@ -25,11 +25,12 @@ $tickets = $tickets->fetchAll();
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>My Dashboard — TicketDesk</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon">🖥</div>Ticket<span>Desk</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-desktop"></i></div>Ticket<span>Desk</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php" class="active">My Tickets</a>
     <a href="raise_ticket.php">Raise Ticket</a>
@@ -37,7 +38,7 @@ $tickets = $tickets->fetchAll();
   </div>
   <div class="topbar-right">
     <a href="notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">
-      🔔<?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
+      <i class="fa-solid fa-bell"></i><?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
     </a>
     <div class="user">
       <div class="avatar"><?php $p=explode(' ',$_SESSION['name']); echo strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):'')); ?></div>
@@ -53,7 +54,7 @@ $tickets = $tickets->fetchAll();
       <div class="side-label">My Account</div>
       <a href="dashboard.php" class="side-item active"><span class="side-icon">📋</span> My Tickets</a>
       <a href="raise_ticket.php" class="side-item"><span class="side-icon">➕</span> Raise Ticket</a>
-      <a href="notifications.php" class="side-item"><span class="side-icon">🔔</span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
+      <a href="notifications.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-bell"></i></span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
       <a href="profile.php" class="side-item"><span class="side-icon">👤</span> My Profile</a>
     </div>
     <div class="side-section">

@@ -66,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Login — TicketDesk</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 .field-error{color:#ef9a9a;font-size:0.72rem;margin-top:3px;display:block;}
@@ -100,16 +101,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       <div class="form-group" style="margin-top:1rem">
         <label>Password</label>
-        <input type="password" name="password"
-               placeholder="Enter your password"
-               class="<?= isset($errors['password']) ? 'input-invalid' : '' ?>"/>
+        <div class="pw-wrap">
+          <input type="password" name="password"
+                 placeholder="Enter your password" id="login-pw"
+                 class="<?= isset($errors['password']) ? 'input-invalid' : '' ?>"/>
+          <button type="button" class="pw-toggle" onclick="togglePw('login-pw', this)" title="Show password">
+            <i class="fa-regular fa-eye"></i>
+          </button>
+        </div>
         <?php if (isset($errors['password'])): ?>
-          <span class="field-error">⚠ <?= sanitize($errors['password']) ?></span>
+          <span class="field-error"><i class="fa-solid fa-circle-exclamation"></i> <?= sanitize($errors['password']) ?></span>
         <?php endif; ?>
       </div>
 
       <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:1.5rem">
-        🔐 Sign In
+        <i class="fa-solid fa-right-to-bracket"></i> Sign In
       </button>
     </form>
 
@@ -119,6 +125,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
   </div>
 </div>
+<script>
+function togglePw(id, btn) {
+    var inp = document.getElementById(id);
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+    } else {
+        inp.type = 'password';
+        btn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+    }
+}
+</script>
 <script src="<?= SITE_URL ?>/assets/js/theme.js"></script>
 </body>
 </html>

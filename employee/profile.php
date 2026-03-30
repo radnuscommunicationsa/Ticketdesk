@@ -61,6 +61,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>My Profile — TicketDesk</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 .profile-avatar { width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:#fff;margin:0 auto 1rem;box-shadow:0 4px 16px var(--red-glow); }
@@ -152,21 +153,30 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
 
       <!-- Change Password Card -->
       <div class="card">
-        <div class="card-header"><div class="card-title">🔒 Change Password</div></div>
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-lock"></i> Change Password</div></div>
         <div class="card-body">
           <form method="POST" id="pass-form">
             <input type="hidden" name="action" value="password"/>
             <div class="form-group" style="margin-bottom:1rem">
               <label>Current Password *</label>
+              <div class="pw-wrap">
               <input type="password" name="current_password" placeholder="Enter current password" required id="cp-current"/>
+              <button type="button" class="pw-toggle" onclick="togglePw('cp-current', this)"><i class="fa-regular fa-eye"></i></button>
+              </div>
             </div>
             <div class="form-group" style="margin-bottom:1rem">
               <label>New Password *</label>
+              <div class="pw-wrap">
               <input type="password" name="new_password" placeholder="Min 6 characters" required id="np"/>
+              <button type="button" class="pw-toggle" onclick="togglePw('np', this)"><i class="fa-regular fa-eye"></i></button>
+              </div>
             </div>
             <div class="form-group" style="margin-bottom:1rem">
               <label>Confirm New Password *</label>
+              <div class="pw-wrap">
               <input type="password" name="confirm_password" placeholder="Re-enter new password" required id="cp"/>
+              <button type="button" class="pw-toggle" onclick="togglePw('cp', this)"><i class="fa-regular fa-eye"></i></button>
+              </div>
               <div id="match-msg" class="match-msg"></div>
             </div>
             <!-- Password strength bar -->
@@ -287,6 +297,16 @@ function checkPasswordReady() {
 
 npInput.addEventListener('input', checkPasswordReady);
 cpInput.addEventListener('input', checkPasswordReady);
+function togglePw(id, btn) {
+    var inp = document.getElementById(id);
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.innerHTML = '<i class="fa-regular fa-eye-slash"></i>';
+    } else {
+        inp.type = 'password';
+        btn.innerHTML = '<i class="fa-regular fa-eye"></i>';
+    }
+}
 </script>
 <script src="<?= SITE_URL ?>/assets/js/theme.js"></script>
 </body>

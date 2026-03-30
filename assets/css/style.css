@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ══════════════════════════════════════
    LIGHT MODE — Red & White (DEFAULT)
@@ -66,7 +66,7 @@ body.dark-mode {
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-    font-family: 'IBM Plex Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     background: var(--bg);
     color: var(--text-main);
     min-height: 100vh;
@@ -84,7 +84,7 @@ a:hover { color: var(--red-bright); text-decoration: underline; }
     background: var(--bg-input); border: 1px solid var(--border);
     border-radius: 20px; padding: 5px 12px 5px 8px;
     cursor: pointer; font-size: 0.75rem; color: var(--text-muted);
-    font-family: 'IBM Plex Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     transition: all 0.2s; flex-shrink: 0; white-space: nowrap;
 }
 .td-toggle-btn:hover { border-color: var(--red-accent); color: var(--red-accent); background: var(--red-glow); }
@@ -119,12 +119,43 @@ body.dark-mode .td-toggle-track::after { left: 18px; background: var(--red-light
     flex-shrink: 0;
 }
 .logo-icon {
-    width: 32px; height: 32px; background: var(--red-primary);
-    border-radius: 6px; display: flex; align-items: center;
-    justify-content: center; font-size: 15px; color: #fff;
+    width: 42px; height: 42px; background: var(--red-primary);
+    border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; font-size: 18px; color: #fff;
     box-shadow: 0 2px 8px var(--red-glow);
 }
 .logo span { color: var(--red-accent); }
+
+/* ══════════════════════════════════════
+   LARGE ICON UTILITIES
+══════════════════════════════════════ */
+.icon-sm   { font-size: 1rem;  }
+.icon-md   { font-size: 1.5rem; }
+.icon-lg   { font-size: 2rem;   display: inline-flex; align-items: center; justify-content: center; }
+.icon-xl   { font-size: 2.5rem; display: inline-flex; align-items: center; justify-content: center; }
+.icon-2xl  { font-size: 3rem;   display: inline-flex; align-items: center; justify-content: center; }
+.icon-3xl  { font-size: 4rem;   display: inline-flex; align-items: center; justify-content: center; }
+.icon-4xl  { font-size: 5rem;   display: inline-flex; align-items: center; justify-content: center; }
+.icon-5xl  { font-size: 6rem;   display: inline-flex; align-items: center; justify-content: center; }
+
+/* Icon circle wrappers */
+.icon-circle {
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 50%; aspect-ratio: 1;
+}
+.icon-circle.icon-sm    { width: 36px;  height: 36px;  font-size: 0.9rem;  }
+.icon-circle.icon-md    { width: 52px;  height: 52px;  font-size: 1.3rem;  }
+.icon-circle.icon-lg    { width: 68px;  height: 68px;  font-size: 1.7rem;  }
+.icon-circle.icon-xl    { width: 84px;  height: 84px;  font-size: 2.1rem;  }
+.icon-circle.icon-2xl   { width: 100px; height: 100px; font-size: 2.6rem;  }
+.icon-circle.icon-3xl   { width: 120px; height: 120px; font-size: 3.2rem;  }
+.icon-circle.icon-4xl   { width: 150px; height: 150px; font-size: 4rem;    }
+.icon-circle.icon-5xl   { width: 180px; height: 180px; font-size: 5rem;    }
+.icon-circle.icon-red    { background: rgba(198,40,40,0.12);  color: var(--red-primary); }
+.icon-circle.icon-green { background: rgba(46,125,50,0.12);  color: var(--green); }
+.icon-circle.icon-blue  { background: rgba(25,118,210,0.12); color: #1976d2; }
+.icon-circle.icon-dark  { background: rgba(0,0,0,0.08);      color: var(--text-main); }
+.icon-circle.icon-white { background: rgba(255,255,255,0.15); color: #fff; }
 .topbar-right { display: flex; align-items: center; gap: 8px; }
 .topbar-right .user { display: flex; align-items: center; gap: 8px; font-size: 0.83rem; color: var(--text-sub); }
 .avatar {
@@ -223,7 +254,7 @@ main {
 .page-header { margin-bottom: 1.5rem; }
 .breadcrumb {
     font-size: 0.72rem; color: var(--text-muted);
-    font-family: 'IBM Plex Mono', monospace; margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace; margin-bottom: 6px;
 }
 .breadcrumb span { color: var(--red-primary); }
 .page-header h1 { font-size: 1.45rem; font-weight: 700; color: var(--text-main); }
@@ -248,7 +279,7 @@ main {
 .stat-card.c-gold::before  { background: var(--gold); }
 .stat-card.c-green::before { background: var(--green); }
 .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 8px; }
-.stat-value { font-size: 2rem; font-weight: 700; font-family: 'IBM Plex Mono', monospace; line-height: 1; }
+.stat-value { font-size: 2rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; line-height: 1; }
 .stat-card.c-blue .stat-value  { color: var(--red-primary); }
 .stat-card.c-red .stat-value   { color: #b71c1c; }
 .stat-card.c-gold .stat-value  { color: var(--gold); }
@@ -298,7 +329,7 @@ tr:hover td { background: var(--bg-hover); }
 /* ══════════════════════════════════════
    BADGES
 ══════════════════════════════════════ */
-.ticket-id { font-family: 'IBM Plex Mono', monospace; color: var(--red-primary); font-size: 0.77rem; white-space: nowrap; }
+.ticket-id { font-family: 'JetBrains Mono', monospace; color: var(--red-primary); font-size: 0.77rem; white-space: nowrap; }
 
 .priority { display: inline-flex; align-items: center; gap: 4px; font-size: 0.73rem; font-weight: 600; padding: 3px 8px; border-radius: 3px; white-space: nowrap; border: 1px solid; }
 .priority.critical { background: rgba(198,40,40,0.1);  color: #c62828; border-color: rgba(198,40,40,0.25); }
@@ -343,9 +374,9 @@ body.dark-mode .status.closed::before { background: #90a4ae; }
 ══════════════════════════════════════ */
 .btn {
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 18px; border-radius: 5px; border: none;
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 0.8rem; font-weight: 600;
+    padding: 6px 14px; border-radius: 5px; border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem; font-weight: 600;
     cursor: pointer; transition: all 0.2s;
     text-transform: uppercase; letter-spacing: 0.05em;
     text-decoration: none; white-space: nowrap;
@@ -359,8 +390,8 @@ body.dark-mode .status.closed::before { background: #90a4ae; }
 body.dark-mode .btn-danger { background: rgba(183,28,28,0.2); color: #ff8a80; }
 .btn-success { background: rgba(46,125,50,0.1); color: #2e7d32; border: 1px solid rgba(46,125,50,0.3); }
 body.dark-mode .btn-success { background: rgba(67,160,71,0.15); color: #a5d6a7; }
-.btn-sm { padding: 4px 10px; font-size: 0.71rem; }
-.btn-xs { padding: 3px 8px; font-size: 0.68rem; }
+.btn-sm { padding: 4px 10px; font-size: 0.72rem; }
+.btn-xs { padding: 3px 8px; font-size: 0.7rem; }
 
 /* ══════════════════════════════════════
    FORMS
@@ -373,11 +404,22 @@ label { font-size: 0.73rem; font-weight: 600; text-transform: uppercase; letter-
 input[type=text], input[type=email], input[type=password],
 input[type=tel], input[type=date], select, textarea {
     background: var(--bg-input); border: 1px solid var(--border);
-    color: var(--text-main); font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--text-main); font-family: 'Inter', sans-serif;
     font-size: 0.85rem; padding: 10px 12px; border-radius: 5px;
     outline: none; transition: border-color 0.2s, background 0.35s, color 0.35s;
     width: 100%; -webkit-appearance: none;
 }
+
+/* Password toggle */
+.pw-wrap { position: relative; display: flex; align-items: center; }
+.pw-wrap input { padding-right: 40px; }
+.pw-toggle {
+    position: absolute; right: 10px; background: none; border: none;
+    cursor: pointer; color: var(--text-muted); font-size: 0.9rem;
+    padding: 4px; display: flex; align-items: center;
+    transition: color 0.2s;
+}
+.pw-toggle:hover { color: var(--red-primary); }
 input:focus, select:focus, textarea:focus {
     border-color: var(--red-primary);
     box-shadow: 0 0 0 3px var(--red-glow);
@@ -452,7 +494,7 @@ body.dark-mode .alert-error   { background: rgba(183,28,28,0.2);  color: #ff8a80
 .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red-primary); margin-top: 5px; flex-shrink: 0; }
 .tl-text { font-size: 0.8rem; color: var(--text-sub); line-height: 1.5; }
 .tl-text strong { color: var(--text-main); }
-.tl-time { font-size: 0.69rem; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; margin-top: 2px; }
+.tl-time { font-size: 0.69rem; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
 
 /* ══════════════════════════════════════
    DETAIL VIEW
@@ -477,7 +519,7 @@ body.dark-mode .alert-error   { background: rgba(183,28,28,0.2);  color: #ff8a80
 ::-webkit-scrollbar-thumb { background: var(--red-primary); border-radius: 3px; }
 
 .text-muted { color: var(--text-muted); font-size: 0.78rem; }
-.mono { font-family: 'IBM Plex Mono', monospace; }
+.mono { font-family: 'JetBrains Mono', monospace; }
 .mt-1 { margin-top: 0.5rem; }
 .mt-2 { margin-top: 1rem; }
 .flex { display: flex; align-items: center; }
@@ -526,8 +568,8 @@ body.dark-mode .alert-error   { background: rgba(183,28,28,0.2);  color: #ff8a80
     .detail-grid { grid-template-columns: 1fr; }
 
     /* Buttons */
-    .btn { padding: 7px 14px; font-size: 0.75rem; }
-    .btn-sm { padding: 4px 8px; font-size: 0.68rem; }
+    .btn { padding: 6px 14px; font-size: 0.72rem; }
+    .btn-sm { padding: 4px 8px; font-size: 0.7rem; }
 
     /* Login */
     .login-box { padding: 1.5rem 1.2rem; border-radius: 10px; }
