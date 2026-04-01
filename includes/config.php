@@ -77,7 +77,9 @@ function isLoggedIn() { return isset($_SESSION['user_id']); }
 function isAdmin() { return isset($_SESSION['role']) && $_SESSION['role'] === 'admin'; }
 function requireLogin() { if (!isLoggedIn()) redirect(SITE_URL . '/login.php'); }
 function requireAdmin() { requireLogin(); if (!isAdmin()) redirect(SITE_URL . '/employee/dashboard.php'); }
-function sanitize($val) { return htmlspecialchars(trim($val), ENT_QUOTES, 'UTF-8'); }
+function sanitize($val) {
+    return htmlspecialchars(trim($val ?? ''), ENT_QUOTES, 'UTF-8');
+}
 function generateTicketNo($pdo) { $row = $pdo->query("SELECT COUNT(*) as cnt FROM tickets")->fetch(); return 'TKT-' . (1000 + $row['cnt'] + 1); }
 function logTicketAction($pdo, $ticketId, $action, $doneBy, $note = '') { $pdo->prepare("INSERT INTO ticket_logs (ticket_id,action,done_by,note) VALUES (?,?,?,?)")->execute([$ticketId, $action, $doneBy, $note]); }
 function getPriorityBadge($priority) {
