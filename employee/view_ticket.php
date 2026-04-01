@@ -28,8 +28,17 @@ $att_path = $att_file ? __DIR__ . '/../uploads/' . $att_file : '';
 $ext      = $att_file ? strtolower(pathinfo($att_file, PATHINFO_EXTENSION)) : '';
 $img_exts = ['jpg','jpeg','png','gif','webp'];
 $is_image = in_array($ext, $img_exts);
-$file_icons = ['pdf'=>'📕','doc'=>'📘','docx'=>'📘','xlsx'=>'📗','xls'=>'📗','zip'=>'📦','txt'=>'📄','csv'=>'📊'];
-$file_icon  = $file_icons[$ext] ?? '📎';
+$file_icons = [
+    'pdf'  => 'fa-file-pdf',
+    'doc'  => 'fa-file-word',
+    'docx' => 'fa-file-word',
+    'xlsx' => 'fa-file-excel',
+    'xls'  => 'fa-file-excel',
+    'zip'  => 'fa-file-zipper',
+    'txt'  => 'fa-file-lines',
+    'csv'  => 'fa-file-csv'
+];
+$file_icon  = $file_icons[$ext] ?? 'fa-file';
 $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/1024, 1) . ' KB' : '';
 ?>
 <!DOCTYPE html>
@@ -37,6 +46,7 @@ $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title><?= $ticket['ticket_no'] ?> — TicketDesk</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 .attach-preview { border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--bg-input); }
@@ -50,7 +60,7 @@ $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon">🖥</div>Ticket<span>Desk</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php" class="active">My Tickets</a>
     <a href="raise_ticket.php">Raise Ticket</a>
@@ -58,7 +68,7 @@ $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/
   </div>
   <div class="topbar-right">
     <a href="notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">
-      🔔<?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
+      <i class="fa-solid fa-bell"></i><?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#EF4444;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
     </a>
     <div class="user">
       <div class="avatar"><?php $p=explode(' ',$_SESSION['name']); echo strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):'')); ?></div>
@@ -72,16 +82,16 @@ $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/
   <div class="sidebar">
     <div class="side-section">
       <div class="side-label">My Account</div>
-      <a href="dashboard.php" class="side-item active"><span class="side-icon">📋</span> My Tickets</a>
-      <a href="raise_ticket.php" class="side-item"><span class="side-icon">➕</span> Raise Ticket</a>
-      <a href="notifications.php" class="side-item"><span class="side-icon">🔔</span> Notifications
+      <a href="dashboard.php" class="side-item active"><span class="side-icon"><i class="fa-solid fa-list-ul"></i></span> My Tickets</a>
+      <a href="raise_ticket.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-plus"></i></span> Raise Ticket</a>
+      <a href="notifications.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-bell"></i></span> Notifications
         <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?>
       </a>
-      <a href="profile.php" class="side-item"><span class="side-icon">👤</span> My Profile</a>
+      <a href="profile.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
     </div>
     <div class="side-section">
       <div class="side-label">Account</div>
-      <a href="<?= SITE_URL ?>/logout.php" class="side-item" style="color:var(--red)"><span class="side-icon">🚪</span> Logout</a>
+      <a href="<?= SITE_URL ?>/logout.php" class="side-item" style="color:var(--primary)"><span class="side-icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</a>
     </div>
   </div>
 
@@ -124,8 +134,8 @@ $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/
     <?php if ($att_file): ?>
     <div class="card">
       <div class="card-header">
-        <div class="card-title">📎 Your Attachment</div>
-        <a href="<?= $att_url ?>" download class="btn btn-ghost btn-sm">⬇️ Download</a>
+        <div class="card-title"><i class="fa-regular fa-paperclip"></i> Your Attachment</div>
+        <a href="<?= $att_url ?>" download class="btn btn-ghost btn-sm"><i class="fa-solid fa-download"></i> Download</a>
       </div>
       <div class="card-body" style="padding:0">
         <?php if ($is_image): ?>
@@ -134,16 +144,16 @@ $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/
           </div>
           <div style="padding:0.7rem 1.2rem;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border-mid)">
             📁 <?= sanitize($att_file) ?> <?= $file_size ? "· $file_size" : '' ?>
-            &nbsp;·&nbsp; <a href="<?= $att_url ?>" target="_blank" style="color:var(--red-primary)">Open in new tab ↗</a>
+            &nbsp;·&nbsp; <a href="<?= $att_url ?>" target="_blank" style="color:var(--primary)">Open in new tab ↗</a>
           </div>
         <?php else: ?>
           <div class="attach-file">
-            <div style="font-size:2rem"><?= $file_icon ?></div>
+            <div style="font-size:2rem"><i class="fa-regular <?= $file_icon ?>"></i></div>
             <div>
               <div style="font-size:0.85rem;font-weight:500;color:var(--text-main)"><?= sanitize($att_file) ?></div>
               <div style="font-size:0.72rem;color:var(--text-muted)"><?= strtoupper($ext) ?> file <?= $file_size ? "· $file_size" : '' ?></div>
             </div>
-            <a href="<?= $att_url ?>" download class="btn btn-primary btn-sm" style="margin-left:auto">⬇️ Download</a>
+            <a href="<?= $att_url ?>" download class="btn btn-primary btn-sm" style="margin-left:auto"><i class="fa-solid fa-download"></i> Download</a>
           </div>
         <?php endif; ?>
       </div>
@@ -152,7 +162,7 @@ $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/
 
     <!-- Activity / Updates -->
     <div class="card">
-      <div class="card-header"><div class="card-title">🔔 Activity / Updates</div></div>
+      <div class="card-header"><div class="card-title"><i class="fa-solid fa-bell"></i> Activity / Updates</div></div>
       <div class="card-body">
         <?php if (empty($logs)): ?>
           <p class="text-muted">No updates yet. The IT team will update this ticket shortly.</p>
@@ -160,7 +170,7 @@ $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/
           <div class="timeline">
             <?php foreach ($logs as $log): ?>
             <div class="tl-item">
-              <div class="tl-dot" style="background:var(--red-primary)"></div>
+              <div class="tl-dot" style="background:var(--primary)"></div>
               <div>
                 <div class="tl-text">
                   <strong><?= sanitize($log['done_by_name']) ?></strong> — <?= sanitize($log['action']) ?>
@@ -173,7 +183,7 @@ $file_size  = ($att_path && file_exists($att_path)) ? round(filesize($att_path)/
           </div>
         <?php endif; ?>
         <div class="divider"></div>
-        <a href="dashboard.php" class="btn btn-ghost btn-sm">← Back to My Tickets</a>
+        <a href="dashboard.php" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Back to My Tickets</a>
       </div>
     </div>
 

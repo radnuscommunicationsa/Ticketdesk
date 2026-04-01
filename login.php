@@ -9,6 +9,7 @@ $error = '';
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $login    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? ''; // ✅ Do NOT trim password — spaces matter
 
@@ -42,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors['password'] = 'Incorrect password. Please try again.';
         } else {
             // ✅ All good — log in
+            session_regenerate_id(true); // Prevent session fixation
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['emp_id']  = $user['emp_id'];
             $_SESSION['name']    = $user['name'];
@@ -69,16 +71,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
-.field-error{color:#ef9a9a;font-size:0.72rem;margin-top:3px;display:block;}
-.input-invalid{border-color:#c62828 !important;}
+.field-error{color:#FCA5A5;font-size:0.72rem;margin-top:3px;display:block;}
+.input-invalid{border-color:#EF4444 !important;}
 </style>
 </head>
 <body>
 <div class="login-wrap">
   <div class="login-box">
     <div class="login-logo">
-      <div class="logo-icon flex" style="justify-content:center">🖥</div>
-      <h2>Ticket<span style="color:var(--red-primary)">Desk</span></h2>
+      <div class="logo-icon flex" style="justify-content:center"><i class="fa-solid fa-computer"></i></div>
+      <h2>Ticket<span style="color:var(--primary)">Desk</span></h2>
       <p>IT Support Portal — Sign In</p>
     </div>
 
@@ -87,6 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST">
+      <?= csrf_input() ?>
       <div class="form-group">
         <label>Employee ID / Email</label>
         <input type="text" name="email"
@@ -95,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                class="<?= isset($errors['email']) ? 'input-invalid' : '' ?>"
                autofocus/>
         <?php if (isset($errors['email'])): ?>
-          <span class="field-error">⚠ <?= sanitize($errors['email']) ?></span>
+          <span class="field-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= sanitize($errors['email']) ?></span>
         <?php endif; ?>
       </div>
 

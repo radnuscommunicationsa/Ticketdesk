@@ -8,10 +8,10 @@ $errors = [];
 
 // ── Add Ticket ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_ticket') {
+    verify_csrf();
     $emp_id   = (int)trim($_POST['emp_id']    ?? 0);
     $subject  = trim($_POST['subject']         ?? '');
     $priority = trim($_POST['priority']        ?? '');
-    $dept     = trim($_POST['department']      ?? '');
     $desc     = trim($_POST['description']     ?? '');
 
     // ── Validation ──
@@ -39,10 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_t
         $errors['priority'] = 'Invalid priority selected.';
     }
 
-    if (empty($dept)) {
-        $errors['department'] = 'Please select a department.';
-    }
-
     if (empty($desc)) {
         $errors['description'] = 'Ticket description is required.';
     } elseif (strlen($desc) < 10) {
@@ -55,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add_t
     if (empty($errors)) {
         try {
             $ticket_no = generateTicketNo($pdo);
-            $pdo->prepare("INSERT INTO tickets (ticket_no, emp_id, subject, priority, department, description, status) VALUES (?,?,?,?,?,?,'open')")
-                ->execute([$ticket_no, $emp_id, $subject, $priority, $dept, $desc]);
+            $pdo->prepare("INSERT INTO tickets (ticket_no, emp_id, subject, priority, description, status) VALUES (?,?,?,?,?,'open')")
+                ->execute([$ticket_no, $emp_id, $subject, $priority, $desc]);
             $new_ticket_id = $pdo->lastInsertId();
             logTicketAction($pdo, $new_ticket_id, 'created', $_SESSION['name'], 'Ticket created by admin.');
             $success = "Ticket <strong>$ticket_no</strong> created successfully.";
@@ -96,10 +92,8 @@ $tickets = $stmt->fetchAll();
 // Get active employees for the Add Ticket dropdown
 $all_employees = $pdo->query("SELECT id, name, emp_id, department FROM employees WHERE status = 'active' ORDER BY name")->fetchAll();
 
-$dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development','Digital Marketing','Sales','Design','Admission','HR','Telecalling','IT Software Support','Stock','Distribution'];
-
 function avatarColor($n) {
-    $c=['#1565c0','#6a1b9a','#00695c','#c62828','#e65100','#2e7d32','#37474f','#4527a0'];
+    $c=['#5552DD','#7B7AFF','#10B981','#F59E0B','#3B82F6','#EC4899','#8B5CF6','#14B8A6'];
     $h=0; foreach(str_split($n) as $ch) $h+=ord($ch); return $c[$h%count($c)];
 }
 function initials($n) {
@@ -111,6 +105,7 @@ function initials($n) {
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>All Tickets — TicketDesk Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
@@ -125,14 +120,14 @@ function initials($n) {
 .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:0.9rem;}
 .fg label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);}
-.field-error{color:#ef9a9a;font-size:0.72rem;margin-top:2px;display:block;}
-.input-invalid{border-color:#c62828 !important;}
+.field-error{color:#FCA5A5;font-size:0.72rem;margin-top:2px;display:block;}
+.input-invalid{border-color:#EF4444 !important;}
 .char-count{font-size:0.68rem;color:var(--text-muted);text-align:right;margin-top:2px;}
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon">🖥</div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php">Dashboard</a>
     <a href="tickets.php" class="active">Tickets</a>
@@ -141,7 +136,7 @@ function initials($n) {
     <a href="reports.php">Reports</a>
   </div>
   <div class="topbar-right">
-    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">🔔<?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
+    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications"><i class="fa-solid fa-bell"></i><?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#EF4444;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
     <a href="<?= SITE_URL ?>/logout.php" class="btn btn-ghost btn-sm">Logout</a>
   </div>
 </div>
@@ -154,8 +149,8 @@ function initials($n) {
       <p>Manage and update all IT support requests</p>
     </div>
 
-    <?php if ($success): ?><div class="alert alert-success">✅ <?= $success ?></div><?php endif; ?>
-    <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
+    <?php if ($success): ?><div class="alert alert-success"><i class="fa-solid fa-check"></i> <?= $success ?></div><?php endif; ?>
+    <?php if ($error):   ?><div class="alert alert-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= sanitize($error) ?></div><?php endif; ?>
 
     <form method="GET" style="display:contents">
       <div class="filters">
@@ -168,7 +163,7 @@ function initials($n) {
         <a href="tickets.php?status=in-progress" class="filter-chip <?= $status==='in-progress'?'active':'' ?>">In Progress</a>
         <a href="tickets.php?status=resolved" class="filter-chip <?= $status==='resolved'?'active':'' ?>">Resolved</a>
         <a href="tickets.php?status=closed" class="filter-chip <?= $status==='closed'?'active':'' ?>">Closed</a>
-        <a href="tickets.php?priority=critical" class="filter-chip <?= $priority==='critical'?'active':'' ?>">🔴 Critical</a>
+        <a href="tickets.php?priority=critical" class="filter-chip <?= $priority==='critical'?'active':'' ?>"><i class="fa-solid fa-circle" style="color:#EF4444;font-size:0.7em;margin-right:4px"></i>Critical</a>
         <button type="submit" class="btn btn-ghost btn-sm">Search</button>
       </div>
     </form>
@@ -224,6 +219,7 @@ function initials($n) {
         </div>
         <div class="modal-body">
           <form method="POST">
+            <?= csrf_input() ?>
             <input type="hidden" name="action" value="add_ticket"/>
 
             <div class="fg">
@@ -236,7 +232,7 @@ function initials($n) {
                   </option>
                 <?php endforeach; ?>
               </select>
-              <?php if (isset($errors['emp_id'])): ?><span class="field-error">⚠ <?= sanitize($errors['emp_id']) ?></span><?php endif; ?>
+              <?php if (isset($errors['emp_id'])): ?><span class="field-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= sanitize($errors['emp_id']) ?></span><?php endif; ?>
             </div>
 
             <div class="fg">
@@ -248,28 +244,16 @@ function initials($n) {
               <?php if (isset($errors['subject'])): ?><span class="field-error">⚠ <?= sanitize($errors['subject']) ?></span><?php endif; ?>
             </div>
 
-            <div class="form-grid-2">
-              <div class="fg">
-                <label>Priority *</label>
-                <select name="priority" class="<?= isset($errors['priority']) ? 'input-invalid' : '' ?>">
-                  <option value="">— Select —</option>
-                  <option value="low"      <?= (($_POST['priority'] ?? '') === 'low')      ? 'selected' : '' ?>>Low</option>
-                  <option value="medium"   <?= (($_POST['priority'] ?? '') === 'medium')   ? 'selected' : '' ?>>Medium</option>
-                  <option value="high"     <?= (($_POST['priority'] ?? '') === 'high')     ? 'selected' : '' ?>>High</option>
-                  <option value="critical" <?= (($_POST['priority'] ?? '') === 'critical') ? 'selected' : '' ?>>🔴 Critical</option>
-                </select>
-                <?php if (isset($errors['priority'])): ?><span class="field-error">⚠ <?= sanitize($errors['priority']) ?></span><?php endif; ?>
-              </div>
-              <div class="fg">
-                <label>Department *</label>
-                <select name="department" class="<?= isset($errors['department']) ? 'input-invalid' : '' ?>">
-                  <option value="">— Select —</option>
-                  <?php foreach ($dept_list as $d): ?>
-                    <option <?= (($_POST['department'] ?? '') === $d) ? 'selected' : '' ?>><?= $d ?></option>
-                  <?php endforeach; ?>
-                </select>
-                <?php if (isset($errors['department'])): ?><span class="field-error">⚠ <?= sanitize($errors['department']) ?></span><?php endif; ?>
-              </div>
+            <div class="form-group">
+              <label>Priority *</label>
+              <select name="priority" class="<?= isset($errors['priority']) ? 'input-invalid' : '' ?>">
+                <option value="">— Select —</option>
+                <option value="low"      <?= (($_POST['priority'] ?? '') === 'low')      ? 'selected' : '' ?>>Low</option>
+                <option value="medium"   <?= (($_POST['priority'] ?? '') === 'medium')   ? 'selected' : '' ?>>Medium</option>
+                <option value="high"     <?= (($_POST['priority'] ?? '') === 'high')     ? 'selected' : '' ?>>High</option>
+                <option value="critical" <?= (($_POST['priority'] ?? '') === 'critical') ? 'selected' : '' ?>>Critical</option>
+              </select>
+              <?php if (isset($errors['priority'])): ?><span class="field-error">⚠ <?= sanitize($errors['priority']) ?></span><?php endif; ?>
             </div>
 
             <div class="fg">

@@ -14,6 +14,7 @@ $employees = $pdo->query("SELECT id,emp_id,name,department FROM employees WHERE 
 $success = $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $emp_id = (int)($_POST['emp_id'] ?? 0);
     $note   = trim($_POST['note'] ?? '');
 
@@ -37,10 +38,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 function catIcon($c) {
-    return match($c) {
-        'Laptop','Desktop'=>'💻','Monitor'=>'🖥️','Printer'=>'🖨️',
-        'Phone'=>'📱','Server'=>'🖧','Network Device'=>'🌐',default=>'🔧'
+    $icon = match($c) {
+        'Laptop','Desktop' => 'fa-laptop',
+        'Monitor'          => 'fa-display',
+        'Printer'          => 'fa-print',
+        'Phone'            => 'fa-mobile-screen',
+        'Server'           => 'fa-server',
+        'Network Device'   => 'fa-network-wired',
+        default            => 'fa-gear'
     };
+    return '<i class="fa-solid ' . $icon . '" style="font-size:1.2rem;vertical-align:middle"></i>';
 }
 $current_page = 'assets.php';
 ?>
@@ -49,6 +56,7 @@ $current_page = 'assets.php';
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Assign Asset — TicketDesk</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 </head>
 <body>
@@ -74,7 +82,7 @@ $current_page = 'assets.php';
       <p><?= catIcon($asset['category']) ?> <?= sanitize($asset['name']) ?> — <?= sanitize($asset['brand']) ?> <?= sanitize($asset['model']) ?></p>
     </div>
 
-    <?php if ($error): ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
+    <?php if ($error): ?><div class="alert alert-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= sanitize($error) ?></div><?php endif; ?>
 
     <div style="max-width:560px">
       <div class="card">
@@ -88,6 +96,7 @@ $current_page = 'assets.php';
           </div>
 
           <form method="POST">
+            <?= csrf_input() ?>
             <div class="form-group" style="margin-bottom:1.2rem">
               <label>Select Employee *</label>
               <select name="emp_id" required>
@@ -102,8 +111,8 @@ $current_page = 'assets.php';
               <textarea name="note" placeholder="e.g. Assigned for remote work, temporary assignment..." style="min-height:80px"></textarea>
             </div>
             <div style="display:flex;gap:10px">
-              <a href="asset_detail.php?id=<?= $id ?>" class="btn btn-ghost">← Cancel</a>
-              <button type="submit" class="btn btn-primary">✅ Confirm Assignment</button>
+              <a href="asset_detail.php?id=<?= $id ?>" class="btn btn-ghost"><i class="fa-solid fa-arrow-left"></i> Cancel</a>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Confirm Assignment</button>
             </div>
           </form>
         </div>

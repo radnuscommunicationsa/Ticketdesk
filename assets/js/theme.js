@@ -42,7 +42,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── Hamburger Mobile Menu ──
-    var sidebar = document.querySelector('.sidebar');
+    // Try admin sidebar (included via PHP) first, then inline sidebar inside .shell
+    var sidebar = document.querySelector('.sidebar') || document.querySelector('.shell > .sidebar');
     if (!sidebar || !topbarRight) return;
 
     // Create hamburger button

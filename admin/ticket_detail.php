@@ -19,6 +19,7 @@ $success = $error = '';
 
 // Handle status update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $new_status = $_POST['status'] ?? '';
     $note       = trim($_POST['note'] ?? '');
     $valid_statuses = ['open','in-progress','resolved','closed'];
@@ -49,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-function avatarColor($n){$c=['#1565c0','#6a1b9a','#00695c','#c62828','#e65100','#2e7d32','#37474f','#4527a0'];$h=0;foreach(str_split($n)as $ch)$h+=ord($ch);return $c[$h%count($c)];}
+function avatarColor($n){$c=['#5552DD','#7B7AFF','#10B981','#F59E0B','#3B82F6','#EC4899','#8B5CF6','#14B8A6'];$h=0;foreach(str_split($n)as $ch)$h+=ord($ch);return $c[$h%count($c)];}
 function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):''));}
 ?>
 <!DOCTYPE html>
@@ -57,6 +58,7 @@ function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(is
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title><?= $ticket['ticket_no'] ?> — TicketDesk Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 .attach-preview { border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--bg-input); }
@@ -103,8 +105,8 @@ function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(is
       </div>
     </div>
 
-    <?php if ($success): ?><div class="alert alert-success">✅ <?= $success ?></div><?php endif; ?>
-    <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= $error ?></div><?php endif; ?>
+    <?php if ($success): ?><div class="alert alert-success"><i class="fa-solid fa-check"></i> <?= $success ?></div><?php endif; ?>
+    <?php if ($error):   ?><div class="alert alert-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= $error ?></div><?php endif; ?>
 
     <div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem">
 
@@ -142,14 +144,23 @@ function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(is
           $ext       = strtolower(pathinfo($att_file, PATHINFO_EXTENSION));
           $img_exts  = ['jpg','jpeg','png','gif','webp'];
           $is_image  = in_array($ext, $img_exts);
-          $icons     = ['pdf'=>'📕','doc'=>'📘','docx'=>'📘','xlsx'=>'📗','xls'=>'📗','zip'=>'📦','txt'=>'📄','csv'=>'📊'];
-          $file_icon = $icons[$ext] ?? '📎';
+          $icons     = [
+              'pdf'  => 'fa-file-pdf',
+              'doc'  => 'fa-file-word',
+              'docx' => 'fa-file-word',
+              'xlsx' => 'fa-file-excel',
+              'xls'  => 'fa-file-excel',
+              'zip'  => 'fa-file-zipper',
+              'txt'  => 'fa-file-lines',
+              'csv'  => 'fa-file-csv'
+          ];
+          $file_icon = $icons[$ext] ?? 'fa-file';
           $file_size = file_exists($att_path) ? round(filesize($att_path)/1024, 1) . ' KB' : '';
         ?>
         <div class="card">
           <div class="card-header">
-            <div class="card-title">📎 Attachment</div>
-            <a href="<?= $att_url ?>" download class="btn btn-ghost btn-sm">⬇️ Download</a>
+            <div class="card-title"><i class="fa-regular fa-paperclip"></i> Attachment</div>
+            <a href="<?= $att_url ?>" download class="btn btn-ghost btn-sm"><i class="fa-solid fa-download"></i> Download</a>
           </div>
           <div class="card-body" style="padding:0">
             <?php if ($is_image): ?>
@@ -157,17 +168,17 @@ function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(is
                 <img src="<?= $att_url ?>" alt="Attachment" class="attach-img" onclick="openLightbox(this.src)" title="Click to zoom"/>
               </div>
               <div style="padding:0.7rem 1.2rem;font-size:0.75rem;color:var(--text-muted);border-top:1px solid var(--border-mid)">
-                📁 <?= sanitize($att_file) ?> <?= $file_size ? '· ' . $file_size : '' ?>
-                &nbsp;·&nbsp; <a href="<?= $att_url ?>" target="_blank" style="color:var(--red-primary)">Open in new tab ↗</a>
+                <i class="fa-regular fa-file" style="font-size:0.9rem"></i> <?= sanitize($att_file) ?> <?= $file_size ? '· ' . $file_size : '' ?>
+                &nbsp;·&nbsp; <a href="<?= $att_url ?>" target="_blank" style="color:var(--primary)">Open in new tab <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
               </div>
             <?php else: ?>
               <div class="attach-file">
-                <div class="attach-icon"><?= $file_icon ?></div>
+                <div class="attach-icon"><i class="fa-regular <?= $file_icon ?>"></i></div>
                 <div>
                   <div class="attach-name"><?= sanitize($att_file) ?></div>
                   <div class="attach-meta"><?= strtoupper($ext) ?> file <?= $file_size ? '· ' . $file_size : '' ?></div>
                 </div>
-                <a href="<?= $att_url ?>" download class="btn btn-primary btn-sm" style="margin-left:auto">⬇️ Download</a>
+                <a href="<?= $att_url ?>" download class="btn btn-primary btn-sm" style="margin-left:auto"><i class="fa-solid fa-download"></i> Download</a>
               </div>
             <?php endif; ?>
           </div>
@@ -184,7 +195,7 @@ function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(is
               <div class="timeline">
                 <?php foreach ($logs as $log): ?>
                 <div class="tl-item">
-                  <div class="tl-dot" style="background:var(--red-primary)"></div>
+                  <div class="tl-dot" style="background:var(--primary)"></div>
                   <div>
                     <div class="tl-text"><strong><?= sanitize($log['done_by_name']) ?></strong> — <?= sanitize($log['action']) ?>
                       <?php if ($log['note']): ?><br><span style="color:var(--text-muted)"><?= sanitize($log['note']) ?></span><?php endif; ?>
@@ -227,6 +238,7 @@ function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(is
           <div class="card-header"><div class="card-title">Update Status</div></div>
           <div class="card-body">
             <form method="POST">
+              <?= csrf_input() ?>
               <div class="form-group" style="margin-bottom:1rem">
                 <label>New Status</label>
                 <select name="status">
@@ -243,7 +255,7 @@ function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(is
               <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Update Ticket</button>
             </form>
             <div class="divider"></div>
-            <a href="tickets.php" class="btn btn-ghost btn-sm">← Back to List</a>
+            <a href="tickets.php" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Back to List</a>
           </div>
         </div>
       </div>

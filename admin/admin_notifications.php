@@ -22,6 +22,7 @@ $current_page = 'admin_notifications.php';
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Notifications — TicketDesk Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 </head>
 <body>
@@ -70,7 +71,7 @@ $current_page = 'admin_notifications.php';
             $pri = $n['priority'] ?? '';
             $icon = '🎫';
             $color = 'var(--text-main)';
-            if ($pri === 'critical') { $icon = '🔴'; $color = '#c62828'; }
+            if ($pri === 'critical') { $icon = '🔴'; $color = '#EF4444'; }
             elseif ($pri === 'high') { $icon = '🟠'; $color = 'var(--orange)'; }
             elseif ($pri === 'medium') { $icon = '🟡'; }
             elseif ($pri === 'low') { $icon = '🟢'; }
@@ -81,7 +82,7 @@ $current_page = 'admin_notifications.php';
               <div style="font-size:0.85rem;color:<?= $color ?>;margin-bottom:4px;line-height:1.5"><?= sanitize($n['message']) ?></div>
               <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
                 <?php if ($n['ticket_no'] && $n['ticket_id']): ?>
-                  <a href="ticket_detail.php?id=<?= $n['ticket_id'] ?>" class="btn btn-primary btn-xs">View Ticket <?= $n['ticket_no'] ?> →</a>
+                  <a href="ticket_detail.php?id=<?= $n['ticket_id'] ?>" class="btn btn-primary btn-xs">View Ticket <?= $n['ticket_no'] ?> <i class="fa-solid fa-arrow-right"></i></a>
                 <?php endif; ?>
                 <span style="font-size:0.72rem;color:var(--text-muted)"><?= date('d M Y, h:i A', strtotime($n['created_at'])) ?></span>
               </div>

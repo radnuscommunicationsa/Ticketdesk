@@ -4,20 +4,35 @@ requireLogin();
 if (isAdmin()) redirect(SITE_URL . '/admin/dashboard.php');
 
 $uid = $_SESSION['user_id'];
+$status = $_GET['status'] ?? '';
 
 // Unread notification count
 $notif_count = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE emp_id=? AND is_read=0");
 $notif_count->execute([$uid]);
 $notif_count = (int)$notif_count->fetchColumn();
 
-// Stats
+// Stats (always show overall counts regardless of filter)
 $my_total    = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE emp_id=?"); $my_total->execute([$uid]); $my_total = $my_total->fetchColumn();
 $my_open     = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE emp_id=? AND status='open'"); $my_open->execute([$uid]); $my_open = $my_open->fetchColumn();
 $my_inprog   = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE emp_id=? AND status='in-progress'"); $my_inprog->execute([$uid]); $my_inprog = $my_inprog->fetchColumn();
 $my_resolved = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE emp_id=? AND status IN ('resolved','closed')"); $my_resolved->execute([$uid]); $my_resolved = $my_resolved->fetchColumn();
 
-$tickets = $pdo->prepare("SELECT * FROM tickets WHERE emp_id=? ORDER BY created_at DESC LIMIT 10");
-$tickets->execute([$uid]);
+// Build query with optional status filter
+$sql = "SELECT * FROM tickets WHERE emp_id=?";
+$params = [$uid];
+
+if ($status === 'open') {
+    $sql .= " AND status='open'";
+} elseif ($status === 'in-progress') {
+    $sql .= " AND status='in-progress'";
+} elseif ($status === 'resolved') {
+    $sql .= " AND status IN ('resolved','closed')";
+}
+
+$sql .= " ORDER BY created_at DESC LIMIT 10";
+
+$tickets = $pdo->prepare($sql);
+$tickets->execute($params);
 $tickets = $tickets->fetchAll();
 ?>
 <!DOCTYPE html>
@@ -30,7 +45,7 @@ $tickets = $tickets->fetchAll();
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-desktop"></i></div>Ticket<span>Desk</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php" class="active">My Tickets</a>
     <a href="raise_ticket.php">Raise Ticket</a>
@@ -38,7 +53,7 @@ $tickets = $tickets->fetchAll();
   </div>
   <div class="topbar-right">
     <a href="notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">
-      <i class="fa-solid fa-bell"></i><?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
+      <i class="fa-solid fa-bell"></i><?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#EF4444;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
     </a>
     <div class="user">
       <div class="avatar"><?php $p=explode(' ',$_SESSION['name']); echo strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):'')); ?></div>
@@ -52,20 +67,20 @@ $tickets = $tickets->fetchAll();
   <div class="sidebar">
     <div class="side-section">
       <div class="side-label">My Account</div>
-      <a href="dashboard.php" class="side-item active"><span class="side-icon">📋</span> My Tickets</a>
-      <a href="raise_ticket.php" class="side-item"><span class="side-icon">➕</span> Raise Ticket</a>
+      <a href="dashboard.php" class="side-item active"><span class="side-icon"><i class="fa-solid fa-list-ul"></i></span> My Tickets</a>
+      <a href="raise_ticket.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-plus"></i></span> Raise Ticket</a>
       <a href="notifications.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-bell"></i></span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
-      <a href="profile.php" class="side-item"><span class="side-icon">👤</span> My Profile</a>
+      <a href="profile.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
     </div>
     <div class="side-section">
       <div class="side-label">Filter</div>
-      <a href="dashboard.php?status=open" class="side-item"><span class="side-icon">🔵</span> Open <span class="side-badge"><?= $my_open ?></span></a>
-      <a href="dashboard.php?status=in-progress" class="side-item"><span class="side-icon">🟠</span> In Progress <span class="side-badge"><?= $my_inprog ?></span></a>
-      <a href="dashboard.php?status=resolved" class="side-item"><span class="side-icon">🟢</span> Resolved</a>
+      <a href="dashboard.php?status=open" class="side-item <?= $status === 'open' ? 'active' : '' ?>"><span class="side-icon"><i class="fa-solid fa-circle" style="color:#3B82F6"></i></span> Open <span class="side-badge"><?= $my_open ?></span></a>
+      <a href="dashboard.php?status=in-progress" class="side-item <?= $status === 'in-progress' ? 'active' : '' ?>"><span class="side-icon"><i class="fa-solid fa-circle" style="color:#F59E0B"></i></span> In Progress <span class="side-badge"><?= $my_inprog ?></span></a>
+      <a href="dashboard.php?status=resolved" class="side-item <?= $status === 'resolved' ? 'active' : '' ?>"><span class="side-icon"><i class="fa-solid fa-circle" style="color:#10B981"></i></span> Resolved</a>
     </div>
     <div class="side-section">
       <div class="side-label">Account</div>
-      <a href="<?= SITE_URL ?>/logout.php" class="side-item" style="color:var(--red)"><span class="side-icon">🚪</span> Logout</a>
+      <a href="<?= SITE_URL ?>/logout.php" class="side-item" style="color:var(--red)"><span class="side-icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</a>
     </div>
   </div>
 

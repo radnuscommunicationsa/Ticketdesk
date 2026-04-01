@@ -11,6 +11,8 @@ if (isset($_GET['delete'])) {
     $del_id = (int)$_GET['delete'];
 
     try {
+        $pdo->beginTransaction();
+
         // <i class="fa-solid fa-check"></i> Step 1: Delete notifications for this employee
         $pdo->prepare("DELETE FROM notifications WHERE emp_id = ?")->execute([$del_id]);
 
@@ -22,10 +24,11 @@ if (isset($_GET['delete'])) {
         $tickets->execute([$del_id]);
         $ticket_ids = $tickets->fetchAll(PDO::FETCH_COLUMN);
 
-        // <i class="fa-solid fa-check"></i> Step 4: Delete ticket_logs for this employee's tickets
+        // <i class="fa-solid fa-check"></i> Step 4: Delete ticket_logs for this employee's tickets (use parameterized IN clause)
         if (!empty($ticket_ids)) {
-            $in = implode(',', array_map('intval', $ticket_ids));
-            $pdo->exec("DELETE FROM ticket_logs WHERE ticket_id IN ($in)");
+            $placeholders = implode(',', array_fill(0, count($ticket_ids), '?'));
+            $stmt = $pdo->prepare("DELETE FROM ticket_logs WHERE ticket_id IN ($placeholders)");
+            $stmt->execute($ticket_ids);
         }
 
         // <i class="fa-solid fa-check"></i> Step 5: Delete tickets
@@ -34,14 +37,17 @@ if (isset($_GET['delete'])) {
         // <i class="fa-solid fa-check"></i> Step 6: Delete employee
         $pdo->prepare("DELETE FROM employees WHERE id = ?")->execute([$del_id]);
 
+        $pdo->commit();
         $success = 'Employee deleted successfully.';
     } catch (PDOException $e) {
+        $pdo->rollBack();
         $error = 'Delete failed: ' . $e->getMessage();
     }
 }
 
 // ── Add Employee ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add') {
+    verify_csrf();
     $fields = ['name','emp_id','email','department','phone','role'];
     $data = [];
     foreach ($fields as $f) $data[$f] = trim($_POST[$f] ?? '');
@@ -68,11 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
         }
     }
 
+    // Email validation (optional but must be valid if provided)
     if (!empty($data['email'])) {
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             $errors['email'] = 'Please enter a valid email address.';
         } else {
-            $check = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE email = ?");
+            // Check for duplicate email (excluding NULLs - only check non-empty emails)
+            $check = $pdo->prepare("SELECT COUNT(*) FROM employees WHERE email = ? AND email IS NOT NULL");
             $check->execute([$data['email']]);
             if ($check->fetchColumn() > 0) {
                 $errors['email'] = 'This email is already registered to another employee.';
@@ -113,12 +121,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
             $_POST = [];
             $errors = [];
         } catch (PDOException $e) {
-            if (strpos($e->getMessage(), 'emp_id') !== false) {
+            $msg = $e->getMessage();
+            // Duplicate emp_id
+            if (strpos($msg, 'emp_id') !== false && strpos($msg, 'Duplicate entry') !== false) {
                 $errors['emp_id'] = 'Employee ID already exists. Please use a different ID.';
-            } elseif (strpos($e->getMessage(), 'email') !== false) {
+            }
+            // Duplicate email (only happens with non-NULL emails)
+            elseif (strpos($msg, 'email') !== false && strpos($msg, 'Duplicate entry') !== false) {
                 $errors['email'] = 'This email is already registered to another employee.';
+            }
+            // NULL constraint violation
+            elseif (strpos($msg, 'email') !== false && (strpos($msg, 'cannot be null') !== false || strpos($msg, "Column 'email' cannot be null") !== false)) {
+                // This shouldn't happen if email is optional - indicates DB needs fix
+                $errors['email'] = 'Email field error. Please contact administrator.';
             } else {
-                $error = 'Something went wrong: ' . $e->getMessage();
+                $error = 'Database error: ' . $e->getMessage();
             }
         }
     }
@@ -130,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
 
 // ── Edit Employee ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit') {
+    verify_csrf();
     $edit_id   = (int)($_POST['edit_id'] ?? 0);
     $name      = trim($_POST['name']       ?? '');
     $emp_id    = trim($_POST['emp_id']     ?? '');
@@ -245,7 +263,7 @@ $employees = $pdo->query("
 // ── Get admins ──
 $admins = $pdo->query("SELECT * FROM employees WHERE role='admin' ORDER BY name")->fetchAll();
 
-function avatarColor($n){$c=['#1565c0','#6a1b9a','#00695c','#c62828','#e65100','#2e7d32','#37474f','#4527a0'];$h=0;foreach(str_split($n)as $ch)$h+=ord($ch);return $c[$h%count($c)];}
+function avatarColor($n){$c=['#5552DD','#7B7AFF','#10B981','#F59E0B','#3B82F6','#EC4899','#8B5CF6','#14B8A6'];$h=0;foreach(str_split($n)as $ch)$h+=ord($ch);return $c[$h%count($c)];}
 function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):''));}
 
 $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development','Digital Marketing','Sales','Design','Admission','HR','Telecalling','Software Support','Stock','Distribution','System Administrator'];
@@ -271,13 +289,13 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
 .fg{display:flex;flex-direction:column;gap:5px;margin-bottom:0.9rem;}
 .fg label{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);}
 .optional-tag{font-size:0.65rem;color:var(--text-muted);font-weight:400;text-transform:none;margin-left:4px;}
-.field-error{color:#ef9a9a;font-size:0.72rem;margin-top:2px;display:block;}
-.input-invalid{border-color:#c62828 !important;}
+.field-error{color:#FCA5A5;font-size:0.72rem;margin-top:2px;display:block;}
+.input-invalid{border-color:#EF4444 !important;}
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-desktop"></i></div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php">Dashboard</a>
     <a href="tickets.php">Tickets</a>
@@ -285,7 +303,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
     <a href="employees.php" class="active">Employees</a>
   </div>
   <div class="topbar-right">
-    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications"><i class="fa-solid fa-bell"></i><?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
+    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications"><i class="fa-solid fa-bell"></i><?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#EF4444;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
     <a href="<?= SITE_URL ?>/logout.php" class="btn btn-ghost btn-sm">Logout</a>
   </div>
 </div>
@@ -355,10 +373,10 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
             <tr>
               <td>
                 <div class="flex gap-2">
-                  <div class="emp-avatar" style="background:#c62828"><?= initials($a['name']) ?></div>
+                  <div class="emp-avatar" style="background:#EF4444"><?= initials($a['name']) ?></div>
                   <div>
                     <div style="font-weight:500"><?= sanitize($a['name']) ?></div>
-                    <div class="text-muted"><span style="color:var(--red-primary);font-size:0.7rem"><i class="fa-solid fa-circle" style="font-size:0.5em"></i> Admin</span></div>
+                    <div class="text-muted"><span style="color:var(--primary);font-size:0.7rem"><i class="fa-solid fa-circle" style="font-size:0.5em"></i> Admin</span></div>
                   </div>
                 </div>
               </td>
@@ -387,6 +405,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
         </div>
         <div class="modal-body">
           <form method="POST" id="addForm">
+            <?= csrf_input() ?>
             <input type="hidden" name="action" value="add"/>
             <div class="form-grid-2">
               <div class="fg">
@@ -465,6 +484,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
         </div>
         <div class="modal-body">
           <form method="POST">
+            <?= csrf_input() ?>
             <input type="hidden" name="action" value="edit"/>
             <input type="hidden" name="edit_id" id="edit_id"/>
             <div class="form-grid-2">
@@ -550,6 +570,7 @@ $dept_list = ['Loan','Accounts','Faculty','Web Development','Mobile Development'
     <div class="modal-body">
       <form method="POST">
         <input type="hidden" name="action" value="edit"/>
+        <?= csrf_input() ?>
         <input type="hidden" name="edit_id" id="ea_id"/>
         <input type="hidden" name="role" value="admin"/>
         <div class="form-grid-2">

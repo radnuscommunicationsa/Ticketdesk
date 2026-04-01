@@ -33,6 +33,7 @@ $success = $error = '';
 
 // Update status
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'status') {
+    verify_csrf();
     $new_status = $_POST['status'] ?? '';
     $note       = trim($_POST['note'] ?? '');
     $valid = ['Available','Assigned','Under Repair','Damaged','Retired'];
@@ -60,19 +61,25 @@ if (isset($_GET['return']) && $current) {
 
 function statusColor($s) {
     return match($s) {
-        'Available'    => 'color:#2e7d32;background:rgba(46,125,50,0.1);border:1px solid rgba(46,125,50,0.2)',
-        'Assigned'     => 'color:#1565c0;background:rgba(21,101,192,0.1);border:1px solid rgba(21,101,192,0.2)',
-        'Under Repair' => 'color:#e65100;background:rgba(230,81,0,0.1);border:1px solid rgba(230,81,0,0.2)',
-        'Damaged'      => 'color:#c62828;background:rgba(198,40,40,0.1);border:1px solid rgba(198,40,40,0.2)',
-        'Retired'      => 'color:#757575;background:rgba(100,100,100,0.1);border:1px solid rgba(100,100,100,0.2)',
+        'Available'    => 'color:#10B981;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2)',
+        'Assigned'     => 'color:#3B82F6;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2)',
+        'Under Repair' => 'color:#F59E0B;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2)',
+        'Damaged'      => 'color:#EF4444;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2)',
+        'Retired'      => 'color:#64748B;background:rgba(100,116,139,0.08);border:1px solid rgba(100,116,139,0.2)',
         default        => ''
     };
 }
 function catIcon($c) {
-    return match($c) {
-        'Laptop','Desktop'=>'💻','Monitor'=>'🖥️','Printer'=>'🖨️',
-        'Phone'=>'📱','Server'=>'🖧','Network Device'=>'🌐',default=>'🔧'
+    $icon = match($c) {
+        'Laptop','Desktop' => 'fa-laptop',
+        'Monitor'          => 'fa-display',
+        'Printer'          => 'fa-print',
+        'Phone'            => 'fa-mobile-screen',
+        'Server'           => 'fa-server',
+        'Network Device'   => 'fa-network-wired',
+        default            => 'fa-gear'
     };
+    return '<i class="fa-solid ' . $icon . '" style="font-size:1.2rem;vertical-align:middle"></i>';
 }
 $current_page = 'assets.php';
 ?>
@@ -81,6 +88,7 @@ $current_page = 'assets.php';
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title><?= sanitize($asset['asset_code']) ?> — Asset Detail</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 .status-pill { display:inline-block; font-size:0.75rem; font-weight:600; padding:4px 12px; border-radius:12px; }
@@ -120,8 +128,8 @@ $current_page = 'assets.php';
       </div>
     </div>
 
-    <?php if ($success): ?><div class="alert alert-success">✅ <?= $success ?></div><?php endif; ?>
-    <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
+    <?php if ($success): ?><div class="alert alert-success"><i class="fa-solid fa-check"></i> <?= $success ?></div><?php endif; ?>
+    <?php if ($error):   ?><div class="alert alert-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= sanitize($error) ?></div><?php endif; ?>
 
     <div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem">
 
@@ -228,6 +236,7 @@ $current_page = 'assets.php';
           <div class="card-header"><div class="card-title">🔄 Update Status</div></div>
           <div class="card-body">
             <form method="POST">
+              <?= csrf_input() ?>
               <input type="hidden" name="action" value="status"/>
               <div class="form-group" style="margin-bottom:1rem">
                 <label>New Status</label>
@@ -244,8 +253,8 @@ $current_page = 'assets.php';
               <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center">Update Status</button>
             </form>
             <div class="divider"></div>
-            <a href="assets.php" class="btn btn-ghost btn-sm">← Back to Assets</a>
-            <a href="asset_assign.php?id=<?= $id ?>" class="btn btn-primary btn-sm" style="margin-left:6px">Assign →</a>
+            <a href="assets.php" class="btn btn-ghost btn-sm"><i class="fa-solid fa-arrow-left"></i> Back to Assets</a>
+            <a href="asset_assign.php?id=<?= $id ?>" class="btn btn-primary btn-sm" style="margin-left:6px">Assign <i class="fa-solid fa-arrow-right"></i></a>
           </div>
         </div>
 

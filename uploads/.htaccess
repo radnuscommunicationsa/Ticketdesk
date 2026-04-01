@@ -1,0 +1,20 @@
+# Block script execution in uploads directory
+<FilesMatch "\.(php|php[345]|phtml|pl|py|jsp|asp|aspx|cgi|sh|bash)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Prevent directory listing
+Options -Indexes
+
+# Set proper permissions
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+
+# Only allow access to images, documents, and archives via direct URL
+<FilesMatch "\.(jpg|jpeg|png|gif|pdf|doc|docx|txt|xlsx|zip)$">
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+</FilesMatch>

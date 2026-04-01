@@ -26,9 +26,10 @@ $allowed_categories = [
 ];
 $allowed_priorities   = ['critical', 'high', 'medium', 'low'];
 // ✅ Fixed: use simple values that match DB ENUM exactly
-$allowed_contact_pref = ['Email', 'Phone', 'In-Person'];
+$allowed_contact_pref = ['Email', 'Phone', 'Slack'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
     $category    = trim($_POST['category']     ?? '');
     $priority    = trim($_POST['priority']     ?? '');
     $subject     = trim($_POST['subject']      ?? '');
@@ -78,7 +79,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ── Handle file upload ──
     if (!empty($_FILES['attachment']['name'])) {
         $file     = $_FILES['attachment'];
-        $allowed  = ['jpg','jpeg','png','gif','pdf','doc','docx','txt','xlsx','zip'];
+        // Map extensions to MIME types for validation
+        $allowed_mime_types = [
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'pdf'  => 'application/pdf',
+            'doc'  => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'txt'  => 'text/plain',
+            'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'zip'  => 'application/zip',
+        ];
+        $allowed_extensions = array_keys($allowed_mime_types);
         $max_size = 5 * 1024 * 1024; // 5MB
         $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
@@ -86,16 +100,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errors['attachment'] = 'File upload failed. Please try again.';
         } elseif ($file['size'] > $max_size) {
             $errors['attachment'] = 'File too large. Max 5MB allowed.';
-        } elseif (!in_array($ext, $allowed)) {
-            $errors['attachment'] = 'File type not allowed. Allowed: JPG, PNG, PDF, DOC, XLSX, ZIP.';
+        } elseif (!in_array($ext, $allowed_extensions)) {
+            $errors['attachment'] = 'File type not allowed. Allowed: JPG, PNG, GIF, PDF, DOC, DOCX, TXT, XLSX, ZIP.';
         } else {
-            $upload_dir = __DIR__ . '/../uploads/';
-            if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
-            $safe_name  = time() . '_' . $uid . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file['name']);
-            if (move_uploaded_file($file['tmp_name'], $upload_dir . $safe_name)) {
-                $attachment = $safe_name;
+            // Validate MIME type using finfo
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mime  = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+
+            if ($mime !== $allowed_mime_types[$ext]) {
+                $errors['attachment'] = 'File MIME type does not match extension. Upload denied.';
             } else {
-                $errors['attachment'] = 'Could not save uploaded file.';
+                $upload_dir = __DIR__ . '/../uploads/';
+                if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+                // Generate random filename to prevent path traversal and guessing
+                $safe_name  = bin2hex(random_bytes(12)) . '_' . $uid . '_' . time() . '.' . $ext;
+                if (move_uploaded_file($file['tmp_name'], $upload_dir . $safe_name)) {
+                    $attachment = $safe_name;
+                } else {
+                    $errors['attachment'] = 'Could not save uploaded file.';
+                }
             }
         }
     }
@@ -138,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Raise Ticket — TicketDesk</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 .upload-area {
@@ -150,15 +175,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     background: var(--bg-input);
     position: relative;
 }
-.upload-area:hover, .upload-area.drag { border-color: var(--red-primary); background: var(--red-glow); }
+.upload-area:hover, .upload-area.drag { border-color: var(--primary); background: var(--primary-glow); }
 .upload-area input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%; }
 .upload-icon { font-size: 2rem; margin-bottom: 6px; }
 .upload-text { font-size: 0.83rem; color: var(--text-sub); }
 .upload-sub  { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
 .file-preview { display:none; margin-top:10px; padding:8px 12px; background:var(--bg-mid); border-radius:6px; border:1px solid var(--border); font-size:0.8rem; color:var(--text-main); align-items:center; gap:8px; }
 .file-preview.show { display:flex; }
-.field-error { color:#ef9a9a; font-size:0.72rem; margin-top:3px; display:block; }
-.input-invalid { border-color:#c62828 !important; }
+.field-error { color:#FCA5A5; font-size:0.72rem; margin-top:3px; display:block; }
+.input-invalid { border-color:#EF4444 !important; }
 .char-count { font-size:0.68rem; color:var(--text-muted); text-align:right; margin-top:2px; }
 </style>
 </head>
@@ -172,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
   <div class="topbar-right">
     <a href="notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">
-      🔔<?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
+      🔔<?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#EF4444;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
     </a>
     <div class="user">
       <div class="avatar"><?php $p=explode(' ',$_SESSION['name']); echo strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):'')); ?></div>
@@ -186,14 +211,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <div class="sidebar">
     <div class="side-section">
       <div class="side-label">My Account</div>
-      <a href="dashboard.php" class="side-item"><span class="side-icon">📋</span> My Tickets</a>
-      <a href="raise_ticket.php" class="side-item active"><span class="side-icon">➕</span> Raise Ticket</a>
-      <a href="notifications.php" class="side-item"><span class="side-icon">🔔</span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
-      <a href="profile.php" class="side-item"><span class="side-icon">👤</span> My Profile</a>
+      <a href="dashboard.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-list-ul"></i></span> My Tickets</a>
+      <a href="raise_ticket.php" class="side-item active"><span class="side-icon"><i class="fa-solid fa-plus"></i></span> Raise Ticket</a>
+      <a href="notifications.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-bell"></i></span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
+      <a href="profile.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
     </div>
     <div class="side-section">
       <div class="side-label">Account</div>
-      <a href="<?= SITE_URL ?>/logout.php" class="side-item" style="color:var(--red)"><span class="side-icon">🚪</span> Logout</a>
+      <a href="<?= SITE_URL ?>/logout.php" class="side-item" style="color:var(--primary)"><span class="side-icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</a>
     </div>
   </div>
 
@@ -205,10 +230,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <?php if ($success): ?>
-      <div class="alert alert-success">✅ <?= $success ?> <a href="dashboard.php" style="color:#a5d6a7;margin-left:8px">View my tickets →</a></div>
+      <div class="alert alert-success"><i class="fa-solid fa-check"></i> <?= $success ?> <a href="dashboard.php" style="color:#a5d6a7;margin-left:8px">View my tickets →</a></div>
     <?php endif; ?>
     <?php if ($error): ?>
-      <div class="alert alert-error">⚠️ <?= sanitize($error) ?></div>
+      <div class="alert alert-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= sanitize($error) ?></div>
     <?php endif; ?>
 
     <div class="card" style="margin-bottom:1rem">
@@ -227,6 +252,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="card-header"><div class="card-title">Ticket Details</div></div>
       <div class="card-body">
         <form method="POST" enctype="multipart/form-data">
+          <?= csrf_input() ?>
           <div class="form-grid">
 
             <!-- Category -->
@@ -238,7 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   <option value="<?= htmlspecialchars($cat) ?>" <?= (($category ?? '') === $cat) ? 'selected' : '' ?>><?= htmlspecialchars($cat) ?></option>
                 <?php endforeach; ?>
               </select>
-              <?php if (isset($errors['category'])): ?><span class="field-error">⚠ <?= sanitize($errors['category']) ?></span><?php endif; ?>
+              <?php if (isset($errors['category'])): ?><span class="field-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= sanitize($errors['category']) ?></span><?php endif; ?>
             </div>
 
             <!-- Priority -->
@@ -246,10 +272,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <label>Priority *</label>
               <select name="priority" class="<?= isset($errors['priority']) ? 'input-invalid' : '' ?>" required>
                 <option value="">— Select Priority —</option>
-                <option value="critical" <?= (($priority ?? '') === 'critical') ? 'selected' : '' ?>>🔴 Critical — Cannot work at all</option>
-                <option value="high"     <?= (($priority ?? '') === 'high')     ? 'selected' : '' ?>>🟠 High — Major disruption</option>
-                <option value="medium"   <?= (($priority ?? '') === 'medium')   ? 'selected' : '' ?>>🟡 Medium — Minor impact</option>
-                <option value="low"      <?= (($priority ?? '') === 'low')      ? 'selected' : '' ?>>🟢 Low — Informational/request</option>
+                <option value="critical" <?= (($priority ?? '') === 'critical') ? 'selected' : '' ?>>Critical — Cannot work at all</option>
+                <option value="high"     <?= (($priority ?? '') === 'high')     ? 'selected' : '' ?>>High — Major disruption</option>
+                <option value="medium"   <?= (($priority ?? '') === 'medium')   ? 'selected' : '' ?>>Medium — Minor impact</option>
+                <option value="low"      <?= (($priority ?? '') === 'low')      ? 'selected' : '' ?>>Low — Informational/request</option>
               </select>
               <?php if (isset($errors['priority'])): ?><span class="field-error">⚠ <?= sanitize($errors['priority']) ?></span><?php endif; ?>
             </div>
@@ -295,9 +321,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
               <label>Preferred Contact</label>
               <select name="contact_pref">
-                <option value="Email"     <?= (($contact ?? 'Email') === 'Email')     ? 'selected' : '' ?>>Email</option>
-                <option value="Phone"     <?= (($contact ?? 'Email') === 'Phone')     ? 'selected' : '' ?>>Phone</option>
-                <option value="In-Person" <?= (($contact ?? 'Email') === 'In-Person') ? 'selected' : '' ?>>In-Person</option>
+                <option value="Email" <?= (($contact ?? 'Email') === 'Email') ? 'selected' : '' ?>>Email</option>
+                <option value="Phone" <?= (($contact ?? 'Email') === 'Phone') ? 'selected' : '' ?>>Phone</option>
+                <option value="Slack" <?= (($contact ?? 'Email') === 'Slack') ? 'selected' : '' ?>>Slack</option>
               </select>
             </div>
 
@@ -306,22 +332,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <label>Attachment (optional) <span style="font-weight:400;text-transform:none;color:var(--text-muted)">— Screenshot or file (max 5MB)</span></label>
               <div class="upload-area" id="uploadArea">
                 <input type="file" name="attachment" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.xlsx,.zip"/>
-                <div class="upload-icon">📎</div>
+                <div class="upload-icon"><i class="fa-regular fa-paperclip"></i></div>
                 <div class="upload-text">Click to upload or drag & drop</div>
                 <div class="upload-sub">JPG, PNG, PDF, DOC, XLSX, ZIP — Max 5MB</div>
               </div>
               <?php if (isset($errors['attachment'])): ?><span class="field-error">⚠ <?= sanitize($errors['attachment']) ?></span><?php endif; ?>
               <div class="file-preview" id="filePreview">
-                <span id="fileIcon">📄</span>
+                <span id="fileIcon"><i class="fa-regular fa-file"></i></span>
                 <span id="fileName"></span>
                 <span id="fileSize" style="color:var(--text-muted);margin-left:auto"></span>
-                <button type="button" onclick="clearFile()" style="background:none;border:none;color:#c62828;cursor:pointer;font-size:1rem">✕</button>
+                <button type="button" onclick="clearFile()" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:1rem"><i class="fa-solid fa-xmark"></i></button>
               </div>
             </div>
 
             <div class="form-group full form-actions">
               <a href="dashboard.php" class="btn btn-ghost">Cancel</a>
-              <button type="submit" class="btn btn-primary">🎫 Submit Ticket</button>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-ticket"></i> Submit Ticket</button>
             </div>
 
           </div>
@@ -361,9 +387,20 @@ uploadArea.addEventListener('drop', function(e){
 });
 
 function showPreview(file) {
-    var icons = {jpg:'🖼️',jpeg:'🖼️',png:'🖼️',gif:'🖼️',pdf:'📕',doc:'📘',docx:'📘',xlsx:'📗',zip:'📦',txt:'📄'};
+    var icons = {
+        jpg:  '<i class="fa-regular fa-file-image"></i>',
+        jpeg: '<i class="fa-regular fa-file-image"></i>',
+        png:  '<i class="fa-regular fa-file-image"></i>',
+        gif:  '<i class="fa-regular fa-file-image"></i>',
+        pdf:  '<i class="fa-regular fa-file-pdf"></i>',
+        doc:  '<i class="fa-regular fa-file-word"></i>',
+        docx: '<i class="fa-regular fa-file-word"></i>',
+        xlsx: '<i class="fa-regular fa-file-excel"></i>',
+        zip:  '<i class="fa-regular fa-file-zipper"></i>',
+        txt:  '<i class="fa-regular fa-file-lines"></i>'
+    };
     var ext = file.name.split('.').pop().toLowerCase();
-    document.getElementById('fileIcon').textContent = icons[ext] || '📄';
+    document.getElementById('fileIcon').innerHTML = icons[ext] || '<i class="fa-regular fa-file"></i>';
     document.getElementById('fileName').textContent = file.name;
     document.getElementById('fileSize').textContent = (file.size/1024/1024).toFixed(2) + ' MB';
     preview.classList.add('show');

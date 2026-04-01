@@ -8,14 +8,22 @@ $success = $error = '';
 // ── Delete Asset ──
 if (isset($_GET['delete'])) {
     $del_id = (int)$_GET['delete'];
-    $pdo->prepare("DELETE FROM asset_assignments WHERE asset_id=?")->execute([$del_id]);
-    $pdo->prepare("DELETE FROM asset_logs WHERE asset_id=?")->execute([$del_id]);
-    $pdo->prepare("DELETE FROM assets WHERE id=?")->execute([$del_id]);
-    $success = 'Asset deleted successfully.';
+    try {
+        $pdo->beginTransaction();
+        $pdo->prepare("DELETE FROM asset_assignments WHERE asset_id=?")->execute([$del_id]);
+        $pdo->prepare("DELETE FROM asset_logs WHERE asset_id=?")->execute([$del_id]);
+        $pdo->prepare("DELETE FROM assets WHERE id=?")->execute([$del_id]);
+        $pdo->commit();
+        $success = 'Asset deleted successfully.';
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        $error = 'Delete failed: ' . $e->getMessage();
+    }
 }
 
 // ── Add Asset ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add') {
+    verify_csrf();
     $asset_code   = trim($_POST['asset_code']   ?? '');
     $name         = trim($_POST['name']         ?? '');
     $category     = trim($_POST['category']     ?? '');
@@ -54,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'add')
 
 // ── Edit Asset ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit') {
+    verify_csrf();
     $edit_id      = (int)($_POST['edit_id']      ?? 0);
     $asset_code   = trim($_POST['asset_code']    ?? '');
     $name         = trim($_POST['name']          ?? '');
@@ -123,24 +132,25 @@ $statuses   = ['Available','Assigned','Under Repair','Damaged','Retired'];
 
 function statusColor($s) {
     return match($s) {
-        'Available'    => 'color:#2e7d32;background:rgba(46,125,50,0.1);border:1px solid rgba(46,125,50,0.2)',
-        'Assigned'     => 'color:#1565c0;background:rgba(21,101,192,0.1);border:1px solid rgba(21,101,192,0.2)',
-        'Under Repair' => 'color:#e65100;background:rgba(230,81,0,0.1);border:1px solid rgba(230,81,0,0.2)',
-        'Damaged'      => 'color:#c62828;background:rgba(198,40,40,0.1);border:1px solid rgba(198,40,40,0.2)',
-        'Retired'      => 'color:#757575;background:rgba(100,100,100,0.1);border:1px solid rgba(100,100,100,0.2)',
+        'Available'    => 'color:#10B981;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2)',
+        'Assigned'     => 'color:#3B82F6;background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2)',
+        'Under Repair' => 'color:#F59E0B;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2)',
+        'Damaged'      => 'color:#EF4444;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2)',
+        'Retired'      => 'color:#64748B;background:rgba(100,116,139,0.08);border:1px solid rgba(100,116,139,0.2)',
         default        => ''
     };
 }
 function catIcon($c) {
-    return match($c) {
-        'Laptop','Desktop' => '💻',
-        'Monitor'          => '🖥️',
-        'Printer'          => '🖨️',
-        'Phone'            => '📱',
-        'Server'           => '🖧',
-        'Network Device'   => '🌐',
-        default            => '🔧'
+    $icon = match($c) {
+        'Laptop','Desktop' => 'fa-laptop',
+        'Monitor'          => 'fa-display',
+        'Printer'          => 'fa-print',
+        'Phone'            => 'fa-mobile-screen',
+        'Server'           => 'fa-server',
+        'Network Device'   => 'fa-network-wired',
+        default            => 'fa-gear'
     };
+    return '<i class="fa-solid ' . $icon . '" style="font-size:1.2rem;vertical-align:middle"></i>';
 }
 ?>
 <!DOCTYPE html>
@@ -148,6 +158,7 @@ function catIcon($c) {
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Assets — TicketDesk Admin</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
@@ -167,7 +178,7 @@ function catIcon($c) {
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon">🖥</div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php">Dashboard</a>
     <a href="tickets.php">Tickets</a>
@@ -176,7 +187,7 @@ function catIcon($c) {
     <a href="reports.php">Reports</a>
   </div>
   <div class="topbar-right">
-    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">🔔<?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
+    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications"><i class="fa-solid fa-bell"></i><?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#EF4444;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
     <a href="<?= SITE_URL ?>/logout.php" class="btn btn-ghost btn-sm">Logout</a>
   </div>
 </div>
@@ -190,8 +201,8 @@ function catIcon($c) {
       <p>Track and manage all company assets</p>
     </div>
 
-    <?php if ($success): ?><div class="alert alert-success">✅ <?= $success ?></div><?php endif; ?>
-    <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
+    <?php if ($success): ?><div class="alert alert-success"><i class="fa-solid fa-check"></i> <?= $success ?></div><?php endif; ?>
+    <?php if ($error):   ?><div class="alert alert-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= sanitize($error) ?></div><?php endif; ?>
 
     <!-- Stats -->
     <div class="stats" style="grid-template-columns:repeat(5,1fr)">
@@ -242,7 +253,7 @@ function catIcon($c) {
               <td style="font-size:0.78rem;color:var(--text-muted)"><?= sanitize($a['location'] ?: '—') ?></td>
               <td style="display:flex;gap:5px;flex-wrap:wrap">
                 <a href="asset_detail.php?id=<?= $a['id'] ?>" class="btn btn-ghost btn-xs">View</a>
-                <button class="btn btn-primary btn-xs" onclick="openEditAsset(<?= htmlspecialchars(json_encode($a)) ?>)">✏️ Edit</button>
+                <button class="btn btn-primary btn-xs" onclick="openEditAsset(<?= htmlspecialchars(json_encode($a)) ?>)"><i class="fa-solid fa-pencil"></i> Edit</button>
                 <a href="?delete=<?= $a['id'] ?>" class="btn btn-danger btn-xs" onclick="return confirm('Delete this asset?')">Delete</a>
               </td>
             </tr>
@@ -259,11 +270,12 @@ function catIcon($c) {
     <div class="modal-overlay" id="addModal">
       <div class="modal-box">
         <div class="modal-header">
-          <h3>➕ Add New Asset</h3>
+          <h3><i class="fa-solid fa-plus"></i> Add New Asset</h3>
           <button class="modal-close" onclick="document.getElementById('addModal').classList.remove('open')">✕</button>
         </div>
         <div class="modal-body">
           <form method="POST">
+            <?= csrf_input() ?>
             <input type="hidden" name="action" value="add"/>
             <div class="form-grid-2">
               <div class="fg">
@@ -316,11 +328,12 @@ function catIcon($c) {
     <div class="modal-overlay" id="editModal">
       <div class="modal-box">
         <div class="modal-header">
-          <h3>✏️ Edit Asset</h3>
+          <h3><i class="fa-solid fa-pencil"></i> Edit Asset</h3>
           <button class="modal-close" onclick="document.getElementById('editModal').classList.remove('open')">✕</button>
         </div>
         <div class="modal-body">
           <form method="POST">
+            <?= csrf_input() ?>
             <input type="hidden" name="action" value="edit"/>
             <input type="hidden" name="edit_id" id="edit_id"/>
             <div class="form-grid-2">

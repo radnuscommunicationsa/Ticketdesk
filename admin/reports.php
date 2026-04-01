@@ -74,6 +74,7 @@ $current_page = 'reports.php';
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Monthly Report — TicketDesk</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
 @media print {
@@ -98,12 +99,12 @@ $current_page = 'reports.php';
 .report-stat .lbl { font-size:0.68rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); margin-top:4px; }
 .pct-bar { height:6px; background:var(--border); border-radius:3px; margin-top:6px; overflow:hidden; }
 .pct-fill { height:100%; border-radius:3px; transition:width 0.5s; }
-.section-title { font-size:0.95rem; font-weight:700; color:var(--text-main); margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:2px solid var(--red-primary); display:flex; align-items:center; gap:8px; }
+.section-title { font-size:0.95rem; font-weight:700; color:var(--text-main); margin-bottom:1rem; padding-bottom:0.5rem; border-bottom:2px solid var(--primary); display:flex; align-items:center; gap:8px; }
 </style>
 </head>
 <body>
 <div class="topbar no-print">
-  <div class="logo"><div class="logo-icon">🖥</div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px">ADMIN</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px">ADMIN</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php">Dashboard</a>
     <a href="tickets.php">Tickets</a>
@@ -112,7 +113,7 @@ $current_page = 'reports.php';
     <a href="reports.php" class="active">Reports</a>
   </div>
   <div class="topbar-right">
-    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">🔔<?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
+    <a href="<?= SITE_URL ?>/admin/admin_notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications"><i class="fa-solid fa-bell"></i><?php if($admin_notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#EF4444;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $admin_notif_count ?></span><?php endif; ?></a>
     <a href="<?= SITE_URL ?>/logout.php" class="btn btn-ghost btn-sm">Logout</a>
   </div>
 </div>
@@ -129,7 +130,7 @@ $current_page = 'reports.php';
 
     <div class="page-header no-print">
       <div class="breadcrumb">TICKETDESK / <span>REPORTS</span></div>
-      <h1>📊 Monthly Reports</h1>
+      <h1><i class="fa-solid fa-chart-bar"></i> Monthly Reports</h1>
       <p>Ticket summary, employee performance and asset overview</p>
     </div>
 
@@ -152,25 +153,25 @@ $current_page = 'reports.php';
             <?php endforeach; ?>
           </select>
         </div>
-        <button type="submit" class="btn btn-primary btn-sm">🔍 Generate</button>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i> Generate</button>
       </form>
       <div style="margin-left:auto;display:flex;gap:8px">
-        <button onclick="window.print()" class="btn btn-ghost btn-sm">🖨️ Print / PDF</button>
-        <button onclick="downloadExcel()" class="btn btn-primary btn-sm">📥 Excel</button>
+        <button onclick="window.print()" class="btn btn-ghost btn-sm"><i class="fa-solid fa-print"></i> Print / PDF</button>
+        <button onclick="downloadExcel()" class="btn btn-primary btn-sm"><i class="fa-solid fa-download"></i> Excel</button>
       </div>
     </div>
 
     <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:1.5rem">
-      📅 Report Period: <strong style="color:var(--text-main)"><?= $month_name ?> <?= $year ?></strong>
+      <i class="fa-regular fa-calendar"></i> Report Period: <strong style="color:var(--text-main)"><?= $month_name ?> <?= $year ?></strong>
       &nbsp;(<?= $date_from ?> to <?= $date_to ?>)
     </div>
 
     <!-- ══ SECTION 1: TICKET SUMMARY ══ -->
     <div class="card">
       <div class="card-body">
-        <div class="section-title">🎫 Ticket Summary — <?= $month_name ?> <?= $year ?></div>
+        <div class="section-title"><i class="fa-solid fa-ticket"></i> Ticket Summary — <?= $month_name ?> <?= $year ?></div>
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem">
-          <div class="report-stat"><div class="val" style="color:var(--red-primary)"><?= $tkt['total'] ?></div><div class="lbl">Total Tickets</div></div>
+          <div class="report-stat"><div class="val" style="color:var(--primary)"><?= $tkt['total'] ?></div><div class="lbl">Total Tickets</div></div>
           <div class="report-stat"><div class="val" style="color:#c62828"><?= $tkt['open_c'] ?></div><div class="lbl">Open</div></div>
           <div class="report-stat"><div class="val" style="color:var(--orange)"><?= $tkt['inprog'] ?></div><div class="lbl">In Progress</div></div>
           <div class="report-stat"><div class="val" style="color:var(--green)"><?= $tkt['resolved'] ?></div><div class="lbl">Resolved</div></div>
@@ -202,7 +203,7 @@ $current_page = 'reports.php';
     <!-- ══ SECTION 2: EMPLOYEE-WISE ══ -->
     <div class="card">
       <div class="card-body">
-        <div class="section-title">👥 Employee-wise Ticket Count</div>
+        <div class="section-title"><i class="fa-solid fa-users"></i> Employee-wise Ticket Count</div>
         <div class="table-wrap">
           <table>
             <thead>
@@ -220,7 +221,7 @@ $current_page = 'reports.php';
                 <td style="font-weight:500"><?= sanitize($e['name']) ?></td>
                 <td class="ticket-id"><?= sanitize($e['emp_id']) ?></td>
                 <td><span class="dept-badge"><?= sanitize($e['department']) ?></span></td>
-                <td><strong style="color:var(--red-primary)"><?= $e['total'] ?></strong></td>
+                <td><strong style="color:var(--primary)"><?= $e['total'] ?></strong></td>
                 <td style="color:var(--green)"><?= $e['resolved'] ?></td>
                 <td style="color:<?= $e['pending']>0?'var(--orange)':'var(--text-muted)' ?>"><?= $e['pending'] ?></td>
                 <td>
@@ -241,7 +242,7 @@ $current_page = 'reports.php';
     <!-- ══ SECTION 3: DEPARTMENT-WISE ══ -->
     <div class="card">
       <div class="card-body">
-        <div class="section-title">🏢 Department-wise Tickets</div>
+        <div class="section-title"><i class="fa-solid fa-building"></i> Department-wise Tickets</div>
         <?php if(empty($dept_data)): ?>
           <p style="color:var(--text-muted);font-size:0.85rem">No ticket data for this period.</p>
         <?php else: ?>
@@ -257,7 +258,7 @@ $current_page = 'reports.php';
               <tr>
                 <td style="color:var(--text-muted)"><?= $i+1 ?></td>
                 <td><span class="dept-badge" style="font-size:0.8rem"><?= sanitize($d['department'] ?: 'Unassigned') ?></span></td>
-                <td><strong style="color:var(--red-primary)"><?= $d['total'] ?></strong></td>
+                <td><strong style="color:var(--primary)"><?= $d['total'] ?></strong></td>
                 <td style="color:var(--green)"><?= $d['resolved'] ?></td>
                 <td style="color:<?= $d['pending']>0?'var(--orange)':'var(--text-muted)' ?>"><?= $d['pending'] ?></td>
                 <td>
@@ -278,9 +279,9 @@ $current_page = 'reports.php';
     <!-- ══ SECTION 4: ASSET SUMMARY ══ -->
     <div class="card page-break">
       <div class="card-body">
-        <div class="section-title">🖥️ Asset Status Summary</div>
+        <div class="section-title"><i class="fa-solid fa-server"></i> Asset Status Summary</div>
         <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:1rem;margin-bottom:1.5rem">
-          <div class="report-stat"><div class="val" style="color:var(--red-primary)"><?= $asset_data['total'] ?></div><div class="lbl">Total</div></div>
+          <div class="report-stat"><div class="val" style="color:var(--primary)"><?= $asset_data['total'] ?></div><div class="lbl">Total</div></div>
           <div class="report-stat"><div class="val" style="color:var(--green)"><?= $asset_data['available'] ?></div><div class="lbl">Available</div></div>
           <div class="report-stat"><div class="val" style="color:#1565c0"><?= $asset_data['assigned'] ?></div><div class="lbl">Assigned</div></div>
           <div class="report-stat"><div class="val" style="color:var(--orange)"><?= $asset_data['repair'] ?></div><div class="lbl">Repair</div></div>
@@ -298,10 +299,10 @@ $current_page = 'reports.php';
               ?>
               <tr>
                 <td style="font-weight:500"><?= sanitize($ac['category']) ?></td>
-                <td><strong style="color:var(--red-primary)"><?= $ac['cnt'] ?></strong></td>
+                <td><strong style="color:var(--primary)"><?= $ac['cnt'] ?></strong></td>
                 <td style="min-width:200px">
                   <div style="display:flex;align-items:center;gap:8px">
-                    <div class="pct-bar" style="flex:1;height:8px"><div class="pct-fill" style="width:<?= $pct ?>%;background:var(--red-primary)"></div></div>
+                    <div class="pct-bar" style="flex:1;height:8px"><div class="pct-fill" style="width:<?= $pct ?>%;background:var(--primary)"></div></div>
                     <span style="font-size:0.78rem;color:var(--text-muted);min-width:35px"><?= $pct ?>%</span>
                   </div>
                 </td>

@@ -38,6 +38,22 @@ if ($is_railway) {
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+// Generate CSRF token if not exists
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+function verify_csrf() {
+    $token = $_POST['csrf_token'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'], $token)) {
+        die('Invalid CSRF token. Please refresh the page and try again.');
+    }
+}
+
+function csrf_input() {
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($_SESSION['csrf_token']) . '">';
+}
+
 try {
     $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
     $pdo = new PDO($dsn, DB_USER, DB_PASS, [
@@ -46,11 +62,13 @@ try {
         PDO::ATTR_EMULATE_PREPARES   => false,
     ]);
 } catch (PDOException $e) {
+    // Log the error for debugging but show generic message to user
+    error_log('Database Connection Error: ' . $e->getMessage() . ' - Host: ' . DB_HOST . ' - DB: ' . DB_NAME);
+    $env_info = $is_railway ? 'Production' : 'Development';
     die('<div style="font-family:sans-serif;padding:40px;background:#1a1a2e;color:#ef9a9a;text-align:center">
         <h2>Database Connection Failed ❌</h2>
-        <p>' . htmlspecialchars($e->getMessage()) . '</p>
-        <p style="font-size:0.85rem;margin-top:8px;color:#aaa">Environment: ' . ($is_railway ? '🚂 Railway' : '💻 Localhost') . '</p>
-        <p style="font-size:0.8rem;margin-top:4px;color:#888">Host: ' . DB_HOST . ' | DB: ' . DB_NAME . ' | Port: ' . DB_PORT . '</p>
+        <p>We are experiencing technical difficulties. Our team has been notified.</p>
+        <p style="font-size:0.85rem;margin-top:8px;color:#aaa">Environment: ' . $env_info . '</p>
     </div>');
 }
 
@@ -62,7 +80,16 @@ function requireAdmin() { requireLogin(); if (!isAdmin()) redirect(SITE_URL . '/
 function sanitize($val) { return htmlspecialchars(trim($val), ENT_QUOTES, 'UTF-8'); }
 function generateTicketNo($pdo) { $row = $pdo->query("SELECT COUNT(*) as cnt FROM tickets")->fetch(); return 'TKT-' . (1000 + $row['cnt'] + 1); }
 function logTicketAction($pdo, $ticketId, $action, $doneBy, $note = '') { $pdo->prepare("INSERT INTO ticket_logs (ticket_id,action,done_by,note) VALUES (?,?,?,?)")->execute([$ticketId, $action, $doneBy, $note]); }
-function getPriorityBadge($priority) { $map = ['critical'=>['Critical','critical'],'high'=>['High','high'],'medium'=>['Medium','medium'],'low'=>['Low','low']]; $p = $map[$priority] ?? [ucfirst($priority),'low']; return '<span class="priority '.$p[1].'">'.$p[0].'</span>'; }
+function getPriorityBadge($priority) {
+    $map = [
+        'critical'=>['Critical','critical','#EF4444'],
+        'high'=>['High','high','#F59E0B'],
+        'medium'=>['Medium','medium','#FBBF24'],
+        'low'=>['Low','low','#10B981']
+    ];
+    $p = $map[$priority] ?? [ucfirst($priority),'low','#10B981'];
+    return '<span class="priority '.$p[1].'"><i class="fa-solid fa-circle" style="font-size:0.5em;color:'.$p[2].'"></i> '.$p[0].'</span>';
+}
 function getStatusBadge($status) { $map = ['open'=>['Open','open'],'in-progress'=>['In Progress','in-progress'],'resolved'=>['Resolved','resolved'],'closed'=>['Closed','closed']]; $s = $map[$status] ?? [ucfirst($status),'open']; return '<span class="status '.$s[1].'">'.$s[0].'</span>'; }
 function timeAgo($datetime) { $now = new DateTime(); $then = new DateTime($datetime); $diff = $now->diff($then); if ($diff->days > 7) return $then->format('d M Y'); if ($diff->days >= 1) return $diff->days . 'd ago'; if ($diff->h >= 1) return $diff->h . 'h ago'; if ($diff->i >= 1) return $diff->i . 'm ago'; return 'Just now'; }
 ?>

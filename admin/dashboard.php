@@ -19,7 +19,7 @@ $tickets = $pdo->query("
 ")->fetchAll();
 
 function avatarColor($name) {
-    $colors = ['#1565c0','#6a1b9a','#00695c','#c62828','#e65100','#2e7d32','#37474f','#4527a0'];
+    $colors = ['#5552DD','#7B7AFF','#10B981','#F59E0B','#3B82F6','#EC4899','#8B5CF6','#14B8A6'];
     $h = 0; foreach (str_split($name) as $c) $h += ord($c);
     return $colors[$h % count($colors)];
 }
@@ -34,11 +34,12 @@ function initials($name) {
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Admin Dashboard — TicketDesk</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon">🖥</div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php" class="active">Dashboard</a>
     <a href="tickets.php">Tickets</a>

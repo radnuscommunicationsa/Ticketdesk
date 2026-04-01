@@ -27,7 +27,7 @@ $current_page   = basename($_SERVER['PHP_SELF']);
       <span class="side-badge"><?= $emp_count ?></span>
     </a>
     <a href="<?= SITE_URL ?>/admin/assets.php" class="side-item <?= in_array($current_page,['assets.php','asset_detail.php','asset_assign.php'])?'active':'' ?>">
-      <span class="side-icon"><i class="fa-solid fa-desktop"></i></span> Assets
+      <span class="side-icon"><i class="fa-solid fa-computer"></i></span> Assets
       <span class="side-badge"><?= $asset_count ?></span>
     </a>
   </div>
@@ -48,21 +48,21 @@ $current_page   = basename($_SERVER['PHP_SELF']);
   <div class="side-section">
     <div class="side-label">Queue</div>
     <a href="<?= SITE_URL ?>/admin/tickets.php?priority=critical" class="side-item">
-      <span class="side-icon"><i class="fa-solid fa-circle" style="color:#c62828"></i></span> Critical
+      <span class="side-icon"><i class="fa-solid fa-circle" style="color:#EF4444;font-size:6px"></i></span> Critical
       <?php if($critical_count > 0): ?>
         <span class="side-badge red"><?= $critical_count ?></span>
       <?php endif; ?>
     </a>
     <a href="<?= SITE_URL ?>/admin/tickets.php?status=in-progress" class="side-item">
-      <span class="side-icon"><i class="fa-solid fa-circle" style="color:#f57c00"></i></span> In Progress
+      <span class="side-icon"><i class="fa-solid fa-circle" style="color:#F59E0B;font-size:6px"></i></span> In Progress
       <span class="side-badge"><?= $inprog_count ?></span>
     </a>
     <a href="<?= SITE_URL ?>/admin/tickets.php?status=open" class="side-item">
-      <span class="side-icon"><i class="fa-solid fa-circle" style="color:#1976d2"></i></span> Open
+      <span class="side-icon"><i class="fa-solid fa-circle" style="color:#3B82F6;font-size:6px"></i></span> Open
       <span class="side-badge"><?= $open_count ?></span>
     </a>
     <a href="<?= SITE_URL ?>/admin/tickets.php?status=resolved" class="side-item">
-      <span class="side-icon"><i class="fa-solid fa-circle" style="color:#388e3c"></i></span> Resolved
+      <span class="side-icon"><i class="fa-solid fa-circle" style="color:#10B981;font-size:6px"></i></span> Resolved
     </a>
   </div>
 

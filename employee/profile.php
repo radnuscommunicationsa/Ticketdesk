@@ -18,6 +18,7 @@ $notif_count = (int)$notif_count->fetchColumn();
 
 // ── Update Profile ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'profile') {
+    verify_csrf();
     $name  = trim($_POST['name']  ?? '');
     $phone = trim($_POST['phone'] ?? '');
     if (!$name) {
@@ -54,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'passw
 }
 
 function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):''));}
-function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','#37474f','#4527a0','#1565c0'];$h=0;foreach(str_split($n)as $ch)$h+=ord($ch);return $c[$h%count($c)];}
+function avatarColor($n){$c=['#EF4444','#F59E0B','#10B981','#3B82F6','#EC4899','#8B5CF6','#14B8A6','#5552DD','#1565c0'];$h=0;foreach(str_split($n)as $ch)$h+=ord($ch);return $c[$h%count($c)];}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -64,15 +65,15 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
 <style>
-.profile-avatar { width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:#fff;margin:0 auto 1rem;box-shadow:0 4px 16px var(--red-glow); }
-.notif-badge { background:#c62828;color:#fff;font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;vertical-align:top; }
+.profile-avatar { width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:#fff;margin:0 auto 1rem;box-shadow:0 4px 16px var(--primary-glow); }
+.notif-badge { background:#EF4444;color:#fff;font-size:0.6rem;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;vertical-align:top; }
 .btn-disabled { opacity:0.5 !important; cursor:not-allowed !important; pointer-events:none !important; }
 .match-msg { font-size:0.7rem; margin-top:4px; }
 </style>
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon">🖥</div>Ticket<span>Desk</span></div>
+  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span></div>
   <div class="topbar-nav">
     <a href="dashboard.php">My Tickets</a>
     <a href="raise_ticket.php">Raise Ticket</a>
@@ -80,7 +81,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
   </div>
   <div class="topbar-right">
     <a href="notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">
-      🔔<?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#c62828;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
+      <i class="fa-solid fa-bell"></i><?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#EF4444;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
     </a>
     <div class="user">
       <div class="avatar"><?= initials($_SESSION['name']) ?></div>
@@ -94,37 +95,38 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
   <div class="sidebar">
     <div class="side-section">
       <div class="side-label">My Account</div>
-      <a href="dashboard.php" class="side-item"><span class="side-icon">📋</span> My Tickets</a>
-      <a href="raise_ticket.php" class="side-item"><span class="side-icon">➕</span> Raise Ticket</a>
-      <a href="notifications.php" class="side-item"><span class="side-icon">🔔</span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
-      <a href="profile.php" class="side-item active"><span class="side-icon">👤</span> My Profile</a>
+      <a href="dashboard.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-list-ul"></i></span> My Tickets</a>
+      <a href="raise_ticket.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-plus"></i></span> Raise Ticket</a>
+      <a href="notifications.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-bell"></i></span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
+      <a href="profile.php" class="side-item active"><span class="side-icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
     </div>
     <div class="side-section">
       <div class="side-label">Account</div>
-      <a href="<?= SITE_URL ?>/logout.php" class="side-item" style="color:var(--red)"><span class="side-icon">🚪</span> Logout</a>
+      <a href="<?= SITE_URL ?>/logout.php" class="side-item" style="color:var(--primary)"><span class="side-icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout</a>
     </div>
   </div>
 
   <main>
     <div class="page-header">
       <div class="breadcrumb">TICKETDESK / <span>MY PROFILE</span></div>
-      <h1>👤 My Profile</h1>
+      <h1><i class="fa-solid fa-user"></i> My Profile</h1>
       <p>Update your personal info and password</p>
     </div>
 
-    <?php if ($success): ?><div class="alert alert-success">✅ <?= $success ?></div><?php endif; ?>
-    <?php if ($error):   ?><div class="alert alert-error">⚠️ <?= sanitize($error) ?></div><?php endif; ?>
+    <?php if ($success): ?><div class="alert alert-success"><i class="fa-solid fa-check"></i> <?= $success ?></div><?php endif; ?>
+    <?php if ($error):   ?><div class="alert alert-error"><i class="fa-solid fa-triangle-exclamation"></i> <?= sanitize($error) ?></div><?php endif; ?>
 
     <div class="profile-resp-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
       <!-- Profile Info Card -->
       <div class="card">
-        <div class="card-header"><div class="card-title">👤 Personal Information</div></div>
+        <div class="card-header"><div class="card-title"><i class="fa-solid fa-user"></i> Personal Information</div></div>
         <div class="card-body">
           <div style="text-align:center;margin-bottom:1.5rem">
             <div class="profile-avatar" style="background:<?= avatarColor($user['name']) ?>"><?= initials($user['name']) ?></div>
             <div style="font-size:0.75rem;color:var(--text-muted)"><?= sanitize($user['emp_id']) ?> &nbsp;·&nbsp; <span class="dept-badge"><?= sanitize($user['department']) ?></span></div>
           </div>
           <form method="POST">
+            <?= csrf_input() ?>
             <input type="hidden" name="action" value="profile"/>
             <div class="form-group" style="margin-bottom:1rem">
               <label>Full Name *</label>
@@ -145,7 +147,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
               <small style="color:var(--text-muted);font-size:0.7rem">Department set by admin.</small>
             </div>
             <div style="display:flex;justify-content:flex-end">
-              <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
             </div>
           </form>
         </div>
@@ -156,6 +158,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
         <div class="card-header"><div class="card-title"><i class="fa-solid fa-lock"></i> Change Password</div></div>
         <div class="card-body">
           <form method="POST" id="pass-form">
+            <?= csrf_input() ?>
             <input type="hidden" name="action" value="password"/>
             <div class="form-group" style="margin-bottom:1rem">
               <label>Current Password *</label>
@@ -212,7 +215,7 @@ function avatarColor($n){$c=['#c62828','#6a1b9a','#00695c','#e65100','#2e7d32','
         ?>
         <div class="ticket-stats-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem">
           <div style="text-align:center;padding:1rem;background:var(--bg-mid);border-radius:8px;border:1px solid var(--border)">
-            <div style="font-size:1.8rem;font-weight:700;color:var(--red-primary)"><?= $stats['total'] ?></div>
+            <div style="font-size:1.8rem;font-weight:700;color:var(--primary)"><?= $stats['total'] ?></div>
             <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.1em">Total Raised</div>
           </div>
           <div style="text-align:center;padding:1rem;background:var(--bg-mid);border-radius:8px;border:1px solid var(--border)">
@@ -254,13 +257,13 @@ function checkPasswordReady() {
     if(/[0-9]/.test(newVal))        score++;
     if(/[^A-Za-z0-9]/.test(newVal)) score++;
 
-    var colors = ['#e53935','#e53935','#fb8c00','#f9a825','#2e7d32'];
+    var colors = ['#EF4444','#EF4444','#fb8c00','#f9a825','#10B981'];
     var labels = ['','Very Weak','Weak','Good','Strong'];
 
     bar.style.width      = (score * 20) + '%';
-    bar.style.background = colors[score] || '#e53935';
+    bar.style.background = colors[score] || '#EF4444';
     lbl.textContent      = labels[score] || '';
-    lbl.style.color      = colors[score] || '#e53935';
+    lbl.style.color      = colors[score] || '#EF4444';
 
     // Match check
     var isLongEnough  = newVal.length >= 6;
@@ -270,10 +273,10 @@ function checkPasswordReady() {
     if(confirmFilled) {
         if(isMatching) {
             matchMsg.textContent = '✅ Passwords match!';
-            matchMsg.style.color = '#2e7d32';
+            matchMsg.style.color = '#10B981';
         } else {
             matchMsg.textContent = '❌ Passwords do not match!';
-            matchMsg.style.color = '#e53935';
+            matchMsg.style.color = '#EF4444';
         }
     } else {
         matchMsg.textContent = '';
