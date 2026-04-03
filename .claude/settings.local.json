@@ -3,7 +3,16 @@
     "allow": [
       "Bash(grep:*)",
       "Bash(mysql --version)",
-      "Bash(mysqli --version)"
+      "Bash(mysqli --version)",
+      "Bash(php -l \"C:\\\\xampp\\\\htdocs\\\\ticketdesk\\\\forgot_password.php\")",
+      "Bash(php -l \"C:\\\\xampp\\\\htdocs\\\\ticketdesk\\\\reset_password.php\")",
+      "Bash(php -l \"C:\\\\xampp\\\\htdocs\\\\ticketdesk\\\\test_password_reset.php\")",
+      "Bash(php diagnose_password_reset.php)",
+      "Bash(php --version)",
+      "Bash(curl -sL https://github.com/PHPMailer/PHPMailer/archive/refs/tags/v6.9.1.tar.gz)",
+      "Bash(tar -xz --strip=1 -C vendor/)",
+      "Bash(mkdir -p vendor/PHPMailer)",
+      "Bash(exit 1)"
     ]
   }
 }

@@ -123,8 +123,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </form>
 
     <div class="login-footer">
-      <p>Contact IT Support for login help</p>
-      <p style="margin-top:4px">📧 radnuscommunicationsa@gmail.com</p>
+      <p style="margin-top:0">
+        <a href="<?= SITE_URL ?>/forgot_password.php" style="color: var(--primary); font-weight: 500;">
+          <i class="fa-solid fa-key"></i> Forgot Password?
+        </a>
+      </p>
+      <p style="margin-top:8px">Need help? Contact IT Support:<br>
+        <a href="mailto:radnuscommunicationsa@gmail.com" style="color: var(--primary);">radnuscommunicationsa@gmail.com</a>
+      </p>
     </div>
   </div>
 </div>

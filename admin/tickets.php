@@ -1,7 +1,15 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 requireAdmin();
-$admin_notif_count = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE emp_id=" . (int)$_SESSION['user_id'] . " AND is_read=0")->fetchColumn();
+
+try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE emp_id = ? AND is_read = 0");
+    $stmt->execute([$_SESSION['user_id'] ?? 0]);
+    $admin_notif_count = (int)$stmt->fetchColumn();
+} catch (PDOException $e) {
+    error_log('Notifications query error: ' . $e->getMessage());
+    $admin_notif_count = 0;
+}
 
 $success = $error = '';
 $errors = [];
@@ -91,14 +99,6 @@ $tickets = $stmt->fetchAll();
 
 // Get active employees for the Add Ticket dropdown
 $all_employees = $pdo->query("SELECT id, name, emp_id, department FROM employees WHERE status = 'active' ORDER BY name")->fetchAll();
-
-function avatarColor($n) {
-    $c=['#5552DD','#7B7AFF','#10B981','#F59E0B','#3B82F6','#EC4899','#8B5CF6','#14B8A6'];
-    $h=0; foreach(str_split($n) as $ch) $h+=ord($ch); return $c[$h%count($c)];
-}
-function initials($n) {
-    $p=explode(' ',$n); return strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):''));
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">

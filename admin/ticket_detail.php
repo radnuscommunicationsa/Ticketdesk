@@ -49,9 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Invalid status selected.';
     }
 }
-
-function avatarColor($n){$c=['#5552DD','#7B7AFF','#10B981','#F59E0B','#3B82F6','#EC4899','#8B5CF6','#14B8A6'];$h=0;foreach(str_split($n)as $ch)$h+=ord($ch);return $c[$h%count($c)];}
-function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):''));}
 ?>
 <!DOCTYPE html>
 <html lang="en">

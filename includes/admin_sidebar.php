@@ -1,18 +1,48 @@
 <?php
-// Get counts for sidebar badges
-$open_count     = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status='open'")->fetchColumn();
-$critical_count = $pdo->query("SELECT COUNT(*) FROM tickets WHERE priority='critical' AND status NOT IN ('resolved','closed')")->fetchColumn();
-$inprog_count   = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status='in-progress'")->fetchColumn();
-$total_count    = $pdo->query("SELECT COUNT(*) FROM tickets")->fetchColumn();
-$emp_count      = $pdo->query("SELECT COUNT(*) FROM employees WHERE role='employee'")->fetchColumn();
-$asset_count    = $pdo->query("SELECT COUNT(*) FROM assets")->fetchColumn();
-$a_notif        = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE emp_id=" . (int)$_SESSION['user_id'] . " AND is_read=0")->fetchColumn();
-$current_page   = basename($_SERVER['PHP_SELF']);
+require_once __DIR__ . '/../includes/config.php';
+requireAdmin();
+
+// Get counts for sidebar badges with error handling
+try {
+    $open_count     = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status='open'")->fetchColumn() ?: 0;
+    $critical_count = $pdo->query("SELECT COUNT(*) FROM tickets WHERE priority='critical' AND status NOT IN ('resolved','closed')")->fetchColumn() ?: 0;
+    $inprog_count   = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status='in-progress'")->fetchColumn() ?: 0;
+    $total_count    = $pdo->query("SELECT COUNT(*) FROM tickets")->fetchColumn() ?: 0;
+    $emp_count      = $pdo->query("SELECT COUNT(*) FROM employees WHERE role='employee'")->fetchColumn() ?: 0;
+    $asset_count    = $pdo->query("SELECT COUNT(*) FROM assets")->fetchColumn() ?: 0;
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE emp_id = ? AND is_read = 0");
+    $stmt->execute([$_SESSION['user_id'] ?? 0]);
+    $a_notif = (int)($stmt->fetchColumn() ?: 0);
+} catch (PDOException $e) {
+    error_log('Sidebar query error: ' . $e->getMessage());
+    $open_count = $critical_count = $inprog_count = $total_count = $emp_count = $asset_count = $a_notif = 0;
+}
+$current_page   = basename($_SERVER['PHP_SELF'] ?? '');
 ?>
 <!-- ✅ Font Awesome CDN -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 
 <div class="sidebar">
+  <!-- Admin Profile Header -->
+  <div class="sidebar-header">
+    <div class="logo-large">
+      <div class="logo-icon"><i class="fa-solid fa-shield-halved"></i></div>
+      <div class="logo-text">
+        <div class="logo-title">TicketDesk</div>
+        <div class="logo-badge">Admin Portal</div>
+      </div>
+    </div>
+    <div class="admin-quick">
+      <div class="admin-avatar" style="background:<?= avatarColor($_SESSION['name'] ?? 'Admin') ?>">
+        <?= initials($_SESSION['name'] ?? 'Admin') ?>
+      </div>
+      <div class="admin-info">
+        <div class="admin-name"><?= sanitize($_SESSION['name'] ?? 'Administrator') ?></div>
+        <div class="admin-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+
   <div class="side-section">
     <div class="side-label">Overview</div>
     <a href="<?= SITE_URL ?>/admin/dashboard.php" class="side-item <?= $current_page==='dashboard.php'?'active':'' ?>">

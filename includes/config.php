@@ -26,6 +26,7 @@ if ($is_railway) {
     define('SITE_URL', !empty($railway_domain)
         ? 'https://' . $railway_domain
         : 'https://ticketdesk-production.up.railway.app');
+    define('SITE_NAME', 'TicketDesk');
 } else {
     // ── 💻 LOCALHOST (Development) ──
     define('DB_HOST', 'localhost');
@@ -34,7 +35,13 @@ if ($is_railway) {
     define('DB_NAME', 'ticketdesk');   // ✅ matches your local phpMyAdmin DB name
     define('DB_PORT', '3306');
     define('SITE_URL', 'http://localhost/ticketdesk');
+    define('SITE_NAME', 'TicketDesk');
 }
+
+// ── ⚙️ EMAIL CONFIGURATION ──
+// Railway: Use environment variables for SMTP
+// Localhost: Will use PHP mail() function (configure sendmail in xampp/sendmail/)
+define('EMAIL_DEBUG', getenv('EMAIL_DEBUG') ?: false); // Set to true for detailed logs
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
@@ -94,4 +101,376 @@ function getPriorityBadge($priority) {
 }
 function getStatusBadge($status) { $map = ['open'=>['Open','open'],'in-progress'=>['In Progress','in-progress'],'resolved'=>['Resolved','resolved'],'closed'=>['Closed','closed']]; $s = $map[$status] ?? [ucfirst($status),'open']; return '<span class="status '.$s[1].'">'.$s[0].'</span>'; }
 function timeAgo($datetime) { $now = new DateTime(); $then = new DateTime($datetime); $diff = $now->diff($then); if ($diff->days > 7) return $then->format('d M Y'); if ($diff->days >= 1) return $diff->days . 'd ago'; if ($diff->h >= 1) return $diff->h . 'h ago'; if ($diff->i >= 1) return $diff->i . 'm ago'; return 'Just now'; }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   PASSWORD RESET FUNCTIONS
+══════════════════════════════════════════════════════════════════════════════ */
+
+function generateResetToken($pdo, $emp_id) {
+    // Generate secure random token
+    $token = bin2hex(random_bytes(32));
+    $expires = date('Y-m-d H:i:s', strtotime('+1 hour')); // 1 hour expiry
+
+    // Store in database
+    $stmt = $pdo->prepare("INSERT INTO password_reset_tokens (emp_id, token, expires_at) VALUES (?, ?, ?)");
+    $stmt->execute([$emp_id, $token, $expires]);
+
+    return $token;
+}
+
+function verifyResetToken($pdo, $token) {
+    $stmt = $pdo->prepare("
+        SELECT prt.*, e.email, e.name, e.emp_id
+        FROM password_reset_tokens prt
+        JOIN employees e ON prt.emp_id = e.id
+        WHERE prt.token = ?
+          AND prt.used = 0
+          AND prt.expires_at > NOW()
+    ");
+    $stmt->execute([$token]);
+    return $stmt->fetch();
+}
+
+function markTokenUsed($pdo, $token) {
+    $stmt = $pdo->prepare("UPDATE password_reset_tokens SET used = 1 WHERE token = ?");
+    return $stmt->execute([$token]);
+}
+
+function sendPasswordResetEmail($to, $name, $token) {
+    $resetLink = SITE_URL . "/reset_password.php?token=" . $token;
+    $subject = "TicketDesk - Password Reset Request";
+
+    // HTML email template
+    $message = "
+    <html>
+    <head><title>Password Reset</title></head>
+    <body style='font-family: Inter, sans-serif; line-height: 1.6; color: #333;'>
+        <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+            <div style='background: linear-gradient(135deg, #5552DD 0%, #7B7AFF 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0; text-align: center;'>
+                <h1 style='margin: 0; font-size: 24px;'>TicketDesk</h1>
+                <p style='margin: 5px 0 0 0; opacity: 0.9;'>Password Reset</p>
+            </div>
+
+            <div style='background: #f8fafc; padding: 30px; border-radius: 0 0 10px 10px; border: 1px solid #e2e8f0; border-top: none;'>
+                <p>Hello <strong>" . htmlspecialchars($name) . "</strong>,</p>
+                <p>We received a request to reset your password for your TicketDesk account.</p>
+                <p style='text-align: center; margin: 30px 0;'>
+                    <a href='" . $resetLink . "' style='background: #5552DD; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; display: inline-block;'>
+                        Reset Password
+                    </a>
+                </p>
+                <p style='font-size: 0.85rem; color: #64748b;'>
+                    <strong>Or copy this link:</strong><br>
+                    <code style='background: #e2e8f0; padding: 10px; display: block; word-break: break-all; border-radius: 4px; margin-top: 5px;'>" . $resetLink . "</code>
+                </p>
+                <p style='font-size: 0.85rem; color: #64748b; margin-top: 20px;'>
+                    This link will expire in <strong>1 hour</strong> for security reasons.<br>
+                    If you did not request this reset, please ignore this email. Your account remains secure.
+                </p>
+            </div>
+
+            <div style='text-align: center; margin-top: 30px; font-size: 0.8rem; color: #94a3b8;'>
+                <p>© " . date('Y') . " TicketDesk. All rights reserved.</p>
+                <p>IT Support Portal</p>
+            </div>
+        </div>
+    </body>
+    </html>";
+
+    // Plain text version
+    $plainMessage = "TicketDesk - Password Reset\n\n";
+    $plainMessage .= "Hello " . $name . ",\n\n";
+    $plainMessage .= "We received a request to reset your password for your TicketDesk account.\n\n";
+    $plainMessage .= "Reset your password by clicking the link below or copying it into your browser:\n";
+    $plainMessage .= $resetLink . "\n\n";
+    $plainMessage .= "This link will expire in 1 hour for security reasons.\n";
+    $plainMessage .= "If you did not request this reset, please ignore this email. Your account remains secure.\n\n";
+    $plainMessage .= "© " . date('Y') . " TicketDesk. All rights reserved.\n";
+    $plainMessage .= "IT Support Portal\n";
+
+    // Check for SMTP configuration via environment variables
+    $smtp_host = getenv('SMTP_HOST');
+    $smtp_port = getenv('SMTP_PORT') ?: 587;
+    $smtp_user = getenv('SMTP_USER');
+    $smtp_pass = getenv('SMTP_PASS');
+    $smtp_secure = getenv('SMTP_SECURE') ?: 'tls';
+
+    if ($smtp_host && $smtp_user && $smtp_pass) {
+        // Use SMTP
+        return sendEmailSMTP($to, $name, $subject, $message, $plainMessage, [
+            'host' => $smtp_host,
+            'port' => $smtp_port,
+            'username' => $smtp_user,
+            'password' => $smtp_pass,
+            'secure' => $smtp_secure,
+            'from_name' => SITE_NAME
+        ], $token);
+    } else {
+        // Use PHP mail() function
+        return sendEmailMail($to, $name, $subject, $message, $plainMessage, $token);
+    }
+}
+
+function sendEmailSMTP($to, $name, $subject, $htmlMessage, $plainMessage, $smtp, $token = null) {
+    $host = $smtp['host'];
+    $port = $smtp['port'];
+    $username = $smtp['username'];
+    $password = $smtp['password'];
+    $secure = $smtp['secure'] ?? 'tls';
+    $fromName = $smtp['from_name'] ?? SITE_NAME;
+
+    $debug = $smtp['debug'] ?? false;
+    $log = function($msg) use ($debug) {
+        if ($debug) error_log("[SMTP DEBUG] $msg");
+    };
+
+    try {
+        // Connect to SMTP server
+        $log("Connecting to $host:$port");
+        $socket = @fsockopen($host, $port, $errno, $errstr, 10);
+
+        if (!$socket) {
+            throw new Exception("Could not connect to SMTP server: $errstr ($errno)");
+        }
+
+        $log("Connected");
+        stream_set_timeout($socket, 10);
+
+        // Read initial response
+        $response = fgets($socket, 515);
+        $log("Server: " . trim($response));
+
+        // Check if connection is accepted
+        if (substr($response, 0, 3) != '220') {
+            throw new Exception("SMTP error: " . trim($response));
+        }
+
+        // Send EHLO
+        $ehlo = "EHLO " . gethostname() . "\r\n";
+        fwrite($socket, $ehlo);
+        $log("Client: EHLO " . gethostname());
+
+        // Read EHLO response (can be multi-line)
+        while ($line = fgets($socket, 515)) {
+            $log("Server: " . trim($line));
+            if (substr($line, 3, 1) == ' ') break; // Last line
+        }
+
+        // Start TLS if needed
+        if ($secure === 'tls' && $port == 587) {
+            fwrite($socket, "STARTTLS\r\n");
+            $log("Client: STARTTLS");
+            $response = fgets($socket, 515);
+            $log("Server: " . trim($response));
+
+            if (substr($response, 0, 3) != '220') {
+                throw new Exception("STARTTLS failed: " . trim($response));
+            }
+
+            // Enable crypto
+            if (!stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                throw new Exception("Failed to enable TLS encryption");
+            }
+            $log("TLS enabled");
+        }
+
+        // Authenticate
+        fwrite($socket, "AUTH LOGIN\r\n");
+        $log("Client: AUTH LOGIN");
+        $response = fgets($socket, 515);
+        $log("Server: " . trim($response));
+
+        if (substr($response, 0, 3) != '334') {
+            throw new Exception("AUTH not accepted: " . trim($response));
+        }
+
+        // Send username (base64 encoded)
+        fwrite($socket, base64_encode($username) . "\r\n");
+        $log("Client: (username)");
+        $response = fgets($socket, 515);
+        $log("Server: " . trim($response));
+
+        if (substr($response, 0, 3) != '334') {
+            throw new Exception("Username not accepted: " . trim($response));
+        }
+
+        // Send password (base64 encoded)
+        fwrite($socket, base64_encode($password) . "\r\n");
+        $log("Client: (password)");
+        $response = fgets($socket, 515);
+        $log("Server: " . trim($response));
+
+        if (substr($response, 0, 3) != '235') {
+            throw new Exception("Authentication failed: " . trim($response));
+        }
+        $log("Authenticated");
+
+        // MAIL FROM
+        $from = $username;
+        fwrite($socket, "MAIL FROM:<$from>\r\n");
+        $log("Client: MAIL FROM:<$from>");
+        $response = fgets($socket, 515);
+        $log("Server: " . trim($response));
+
+        if (substr($response, 0, 3) != '250') {
+            throw new Exception("MAIL FROM failed: " . trim($response));
+        }
+
+        // RCPT TO
+        fwrite($socket, "RCPT TO:<$to>\r\n");
+        $log("Client: RCPT TO:<$to>");
+        $response = fgets($socket, 515);
+        $log("Server: " . trim($response));
+
+        if (substr($response, 0, 3) != '250') {
+            throw new Exception("RCPT TO failed: " . trim($response));
+        }
+
+        // DATA
+        fwrite($socket, "DATA\r\n");
+        $log("Client: DATA");
+        $response = fgets($socket, 515);
+        $log("Server: " . trim($response));
+
+        if (substr($response, 0, 3) != '354') {
+            throw new Exception("DATA not accepted: " . trim($response));
+        }
+
+        // Build email headers and body
+        $boundary = md5(uniqid(time()));
+        $headers = "From: $fromName <$from>\r\n";
+        $headers .= "Reply-To: $from\r\n";
+        $headers .= "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: multipart/alternative; boundary=\"" . $boundary . "\"\r\n";
+        $headers .= "Date: " . date('r') . "\r\n";
+        $headers .= "Message-ID: <" . uniqid('', true) . "@" . $_SERVER['SERVER_NAME'] . ">\r\n";
+        $headers .= "X-Mailer: TicketDesk SMTP/" . PHP_VERSION . "\r\n";
+
+        // Body
+        $body = "--" . $boundary . "\r\n";
+        $body .= "Content-Type: text/plain; charset=UTF-8; format=flowed\r\n";
+        $body .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
+        $body .= $plainMessage . "\r\n\r\n";
+
+        $body .= "--" . $boundary . "\r\n";
+        $body .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $body .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
+        $body .= $htmlMessage . "\r\n\r\n";
+        $body .= "--" . $boundary . "--\r\n";
+
+        $email = $headers . "\r\n" . $body;
+
+        // Send email data
+        fwrite($socket, $email);
+        $log("Client: (email content sent)");
+
+        // End data
+        fwrite($socket, ".\r\n");
+        $log("Client: .");
+        $response = fgets($socket, 515);
+        $log("Server: " . trim($response));
+
+        if (substr($response, 0, 3) != '250') {
+            throw new Exception("DATA failed: " . trim($response));
+        }
+
+        // QUIT
+        fwrite($socket, "QUIT\r\n");
+        $log("Client: QUIT");
+        $response = fgets($socket, 515);
+        $log("Server: " . trim($response));
+
+        fclose($socket);
+
+        error_log("✅ Email sent via SMTP to: $to ($name)");
+        if ($token) {
+            error_log("   Reset link: " . SITE_URL . "/reset_password.php?token=" . $token);
+        }
+        return true;
+
+    } catch (Exception $e) {
+        error_log("❌ SMTP error: " . $e->getMessage());
+        if (isset($socket) && is_resource($socket)) {
+            fclose($socket);
+        }
+        return false;
+    }
+}
+
+function sendEmailMail($to, $name, $subject, $htmlMessage, $plainMessage, $token = null) {
+    $boundary = md5(uniqid(time()));
+
+    $headers = "From: " . SITE_NAME . " <noreply@" . $_SERVER['SERVER_NAME'] . ">\r\n";
+    $headers .= "Reply-To: noreply@" . $_SERVER['SERVER_NAME'] . "\r\n";
+    $headers .= "MIME-Version: 1.0\r\n";
+    $headers .= "Content-Type: multipart/alternative; boundary=\"" . $boundary . "\"\r\n";
+    $headers .= "X-Mailer: PHP/" . PHP_VERSION . "\r\n";
+
+    // Plain text part
+    $body = "--" . $boundary . "\r\n";
+    $body .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    $body .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
+    $body .= $plainMessage . "\r\n\r\n";
+
+    // HTML part
+    $body .= "--" . $boundary . "\r\n";
+    $body .= "Content-Type: text/html; charset=UTF-8\r\n";
+    $body .= "Content-Transfer-Encoding: 7bit\r\n\r\n";
+    $body .= $htmlMessage . "\r\n\r\n";
+    $body .= "--" . $boundary . "--";
+
+    // Try to send
+    $sent = mail($to, $subject, $body, $headers);
+
+    if ($sent) {
+        error_log("✅ Email sent via mail() to: $to ($name)");
+        if ($token) {
+            error_log("   Reset link: " . SITE_URL . "/reset_password.php?token=" . $token);
+        }
+        return true;
+    } else {
+        error_log("❌ mail() failed to send to: $to");
+        error_log("   Subject: $subject");
+        error_log("   To: $to");
+        error_log("   Headers: " . substr($headers, 0, 200) . "...");
+        error_log("   PHP error: " . error_get_last()['message'] ?? 'Unknown error');
+        return false;
+    }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   HELPER FUNCTIONS - Centralized for reuse across the application
+══════════════════════════════════════════════════════════════════════════════ */
+
+function avatarColor($name, $palette = 'admin') {
+    // Support multibyte strings for international names
+    $name = $name ?? '';
+    if (function_exists('mb_str_split')) {
+        $chars = mb_str_split($name);
+    } else {
+        // Fallback for environments without mbstring
+        $chars = preg_split('//u', $name, -1, PREG_SPLIT_NO_EMPTY);
+    }
+
+    $h = 0;
+    foreach ($chars as $c) {
+        $h += function_exists('mb_ord') ? mb_ord($c, 'UTF-8') : ord($c);
+    }
+
+    // Different palettes for different contexts
+    $palettes = [
+        'admin' => ['#5552DD', '#7B7AFF', '#10B981', '#F59E0B', '#3B82F6', '#EC4899', '#8B5CF6', '#14B8A6'],
+        'employee' => ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6', '#14B8A6', '#5552DD', '#1565c0'],
+    ];
+
+    $colors = $palettes[$palette] ?? $palettes['admin'];
+    return $colors[$h % count($colors)];
+}
+
+function initials($name) {
+    $parts = preg_split('/\s+/', trim($name ?? ''));
+    $first = $parts[0] ?? '';
+    $second = $parts[1] ?? '';
+    return strtoupper(substr($first, 0, 1) . substr($second, 0, 1));
+}
 ?>

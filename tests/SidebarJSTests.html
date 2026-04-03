@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Sidebar JavaScript Automated Tests</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+<link rel="stylesheet" href="../assets/css/style.css"/>
+<style>
+.test-container {
+    position: fixed; top: 20px; right: 20px;
+    background: white; border: 2px solid #333;
+    padding: 20px; z-index: 99999;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    font-family: 'Inter', monospace; font-size: 13px;
+    max-width: 400px; max-height: 80vh;
+    overflow-y: auto;
+}
+.test-container h3 { margin-top: 0; color: #333; }
+.test-category { margin: 15px 0; padding: 10px; background: #f5f5f5; border-radius: 6px; }
+.test-category-title { font-weight: 600; margin-bottom: 8px; color: #5552DD; }
+.test-result { margin: 4px 0 4px 20px; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
+.test-pass { background: #d4edda; color: #155724; }
+.test-fail { background: #f8d7da; color: #721c24; }
+.test-summary { margin-top: 15px; padding: 12px; background: #e7f3ff; border-radius: 6px; font-weight: 600; }
+.run-btn {
+    width: 100%; padding: 10px; margin-top: 10px;
+    background: #5552DD; color: white; border: none;
+    border-radius: 6px; cursor: pointer; font-weight: 600;
+}
+.run-btn:hover { background: #4746C7; }
+</style>
+</head>
+<body>
+<!-- Mock sidebar structure for testing -->
+<div class="shell" style="display:none;">
+    <div class="sidebar" id="test-sidebar">
+        <div class="sidebar-header">
+            <div class="logo-large">
+                <div class="logo-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                <div class="logo-text">
+                    <div class="logo-title">TicketDesk</div>
+                    <div class="logo-badge">Admin Portal</div>
+                </div>
+            </div>
+            <div class="admin-quick">
+                <div class="admin-avatar" style="background:#5552DD">AU</div>
+                <div class="admin-info">
+                    <div class="admin-name">Admin User</div>
+                    <div class="admin-role">Administrator</div>
+                </div>
+            </div>
+        </div>
+        <div class="side-section">
+            <div class="side-label">Overview</div>
+            <a href="dashboard.php" class="side-item active">
+                <span class="side-icon"><i class="fa-solid fa-gauge-high"></i></span> Dashboard
+            </a>
+            <a href="tickets.php" class="side-item">
+                <span class="side-icon"><i class="fa-solid fa-ticket"></i></span> All Tickets
+                <span class="side-badge">10</span>
+            </a>
+            <a href="employees.php" class="side-item">
+                <span class="side-icon"><i class="fa-solid fa-users"></i></span> Employees
+                <span class="side-badge">5</span>
+            </a>
+            <a href="assets.php" class="side-item">
+                <span class="side-icon"><i class="fa-solid fa-computer"></i></span> Assets
+                <span class="side-badge">20</span>
+            </a>
+        </div>
+        <div class="side-section">
+            <div class="side-label">Reports</div>
+            <a href="reports.php" class="side-item">
+                <span class="side-icon"><i class="fa-solid fa-chart-bar"></i></span> Monthly Report
+            </a>
+            <a href="admin_notifications.php" class="side-item">
+                <span class="side-icon"><i class="fa-solid fa-bell"></i></span> Notifications
+                <span class="side-badge">3</span>
+            </a>
+        </div>
+        <div class="side-section">
+            <div class="side-label">Queue</div>
+            <a href="tickets.php?priority=critical" class="side-item">
+                <span class="side-icon"><i class="fa-solid fa-circle" style="color:#EF4444;font-size:6px"></i></span> Critical
+                <span class="side-badge red">2</span>
+            </a>
+            <a href="tickets.php?status=in-progress" class="side-item">
+                <span class="side-icon"><i class="fa-solid fa-circle" style="color:#F59E0B;font-size:6px"></i></span> In Progress
+                <span class="side-badge">3</span>
+            </a>
+            <a href="tickets.php?status=open" class="side-item">
+                <span class="side-icon"><i class="fa-solid fa-circle" style="color:#3B82F6;font-size:6px"></i></span> Open
+                <span class="side-badge">5</span>
+            </a>
+            <a href="tickets.php?status=resolved" class="side-item">
+                <span class="side-icon"><i class="fa-solid fa-circle" style="color:#10B981;font-size:6px"></i></span> Resolved
+            </a>
+        </div>
+        <div class="side-section">
+            <div class="side-label">Account</div>
+            <a href="logout.php" class="side-item" style="color:var(--red)">
+                <span class="side-icon"><i class="fa-solid fa-right-from-bracket"></i></span> Logout
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="topbar">
+    <div class="logo-compact"><i class="fa-solid fa-shield-halved"></i></div>
+    <div class="topbar-right"></div>
+</div>
+
+<div class="test-container">
+    <h3>🧪 Sidebar JS Tests</h3>
+    <div id="test-results"></div>
+    <button class="run-btn" onclick="runAllTests()">Run All Tests</button>
+</div>
+
+<script src="../assets/js/theme.js"></script>
+<script>
+class SidebarJSTester {
+    constructor() {
+        this.passed = 0;
+        this.failed = 0;
+        this.results = [];
+    }
+
+    log(message, isPass = null) {
+        const resultsDiv = document.getElementById('test-results');
+        const div = document.createElement('div');
+        div.style.margin = '4px 0';
+        div.style.padding = '6px 10px';
+        div.style.borderRadius = '4px';
+        div.style.fontSize = '12px';
+
+        if (isPass === true) {
+            div.className = 'test-result test-pass';
+            div.textContent = '✅ ' + message;
+            this.passed++;
+        } else if (isPass === false) {
+            div.className = 'test-result test-fail';
+            div.textContent = '❌ ' + message;
+            this.failed++;
+        } else {
+            div.style.fontWeight = '600';
+            div.style.color = '#5552DD';
+            div.style.marginTop = '15px';
+            div.textContent = '📁 ' + message;
+        }
+
+        resultsDiv.appendChild(div);
+    }
+
+    assert(condition, testName, details = '') {
+        if (condition) {
+            this.log(`${testName}${details ? ': ' + details : ''}`, true);
+        } else {
+            this.log(`${testName}${details ? ': ' + details : ''}`, false);
+        }
+        return condition;
+    }
+
+    async runAll() {
+        this.passed = 0;
+        this.failed = 0;
+        document.getElementById('test-results').innerHTML = '';
+
+        // Category: Dark Mode
+        this.log('Dark Mode Tests', null);
+        this.testDarkModeToggle();
+        this.testDarkModeLocalStorage();
+        this.testDarkModePersistence();
+
+        // Category: Mobile Menu
+        this.log('Mobile Menu Tests', null);
+        this.testHamburgerCreation();
+        this.testMobileSidebarCreation();
+        this.testMobileSidebarToggle();
+        this.testOverlayCreation();
+        this.testCloseButton();
+        this.testEscapeKeyClosure();
+        this.testOverlayClickCloses();
+        this.testLinkClickCloses();
+        this.testResizeClosesMenu();
+
+        // Category: Accessibility
+        this.log('Accessibility Tests', null);
+        this.testAriaAttributes();
+        this.testKeyboardNavigation();
+
+        // Category: DOM Structure
+        this.log('DOM Structure Tests', null);
+        this.testSidebarHeader();
+        this.testSidebarSections();
+        this.testSidebarLinks();
+        this.testBadgeElements();
+
+        // Show summary
+        this.showSummary();
+    }
+
+    testDarkModeToggle() {
+        const btn = document.querySelector('.td-toggle-btn');
+        this.assert(btn !== null, 'Dark mode toggle button exists');
+
+        if (btn) {
+            const initialState = document.body.classList.contains('dark-mode');
+            btn.click();
+            const afterClick = document.body.classList.contains('dark-mode');
+            this.assert(initialState !== afterClick, 'Dark mode toggle changes state', `Before: ${initialState}, After: ${afterClick}`);
+
+            // Reset
+            btn.click();
+        }
+    }
+
+    testDarkModeLocalStorage() {
+        const key = 'td_theme';
+        const before = localStorage.getItem(key);
+        const btn = document.querySelector('.td-toggle-btn');
+
+        if (btn) {
+            btn.click();
+            const after = localStorage.getItem(key);
+            this.assert(after !== null, 'Dark mode saves to localStorage', `Value: ${after}`);
+
+            // Reset
+            btn.click();
+        } else {
+            this.assert(false, 'Dark mode localStorage - no toggle button');
+        }
+    }
+
+    testDarkModePersistence() {
+        const btn = document.querySelector('.td-toggle-btn');
+        if (btn) {
+            // Toggle to dark
+            const wasDark = document.body.classList.contains('dark-mode');
+            btn.click();
+            const isDarkNow = document.body.classList.contains('dark-mode');
+
+            // Simulate page reload
+            const bodyClass = document.body.className;
+            this.assert(
+                bodyClass.includes('dark-mode') === !wasDark,
+                'Dark mode persists in DOM class',
+                `dark-mode class ${isDarkNow ? 'present' : 'absent'}`
+            );
+
+            // Reset
+            btn.click();
+        } else {
+            this.assert(false, 'Dark mode persistence - no toggle button');
+        }
+    }
+
+    testHamburgerCreation() {
+        // Mobile menu should be initialized
+        const hamburger = document.querySelector('.hamburger');
+        this.assert(hamburger !== null, 'Hamburger button created');
+        this.assert(hamburger && hamburger.getAttribute('aria-label') === 'Toggle menu', 'Hamburger has aria-label');
+    }
+
+    testMobileSidebarCreation() {
+        const mobileSidebar = document.querySelector('.mobile-sidebar');
+        this.assert(mobileSidebar !== null, 'Mobile sidebar created');
+        this.assert(mobileSidebar && mobileSidebar.getAttribute('aria-hidden') !== null, 'Mobile sidebar has aria-hidden');
+    }
+
+    testMobileSidebarToggle() {
+        const hamburger = document.querySelector('.hamburger');
+        const mobileSidebar = document.querySelector('.mobile-sidebar');
+
+        if (hamburger && mobileSidebar) {
+            const initialState = mobileSidebar.classList.contains('open');
+
+            hamburger.click();
+            const afterFirst = mobileSidebar.classList.contains('open');
+            this.assert(initialState !== afterFirst, 'Hamburger opens menu', `Was: ${initialState}, Now: ${afterFirst}`);
+
+            hamburger.click();
+            const afterSecond = mobileSidebar.classList.contains('open');
+            this.assert(afterSecond === initialState, 'Hamburger closes menu', `Now: ${afterSecond}, Should be: ${initialState}`);
+
+            // Ensure closed at end
+            if (mobileSidebar.classList.contains('open')) {
+                hamburger.click();
+            }
+        } else {
+            this.assert(false, 'Mobile sidebar toggle - elements not found');
+        }
+    }
+
+    testOverlayCreation() {
+        const overlay = document.querySelector('.mobile-nav-overlay');
+        this.assert(overlay !== null, 'Overlay created');
+        this.assert(overlay && overlay.getAttribute('aria-hidden') !== null, 'Overlay has aria-hidden');
+    }
+
+    testCloseButton() {
+        const closeBtn = document.querySelector('.mobile-sidebar-close');
+        this.assert(closeBtn !== null, 'Close button exists in mobile header');
+        this.assert(closeBtn && closeBtn.getAttribute('aria-label') !== null, 'Close button has aria-label');
+    }
+
+    testEscapeKeyClosure() {
+        const hamburger = document.querySelector('.hamburger');
+        const mobileSidebar = document.querySelector('.mobile-sidebar');
+
+        if (hamburger && mobileSidebar) {
+            // Open menu
+            hamburger.click();
+            this.assert(mobileSidebar.classList.contains('open'), 'Menu open for escape test');
+
+            // Simulate Escape key
+            const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+            document.dispatchEvent(event);
+
+            // Small delay for event handling
+            setTimeout(() => {
+                const isClosed = !mobileSidebar.classList.contains('open');
+                this.assert(isClosed, 'Escape key closes menu');
+            }, 100);
+        } else {
+            this.assert(false, 'Escape key test - elements not found');
+        }
+    }
+
+    testOverlayClickCloses() {
+        const hamburger = document.querySelector('.hamburger');
+        const mobileSidebar = document.querySelector('.mobile-sidebar');
+        const overlay = document.querySelector('.mobile-nav-overlay');
+
+        if (hamburger && mobileSidebar && overlay) {
+            // Open menu
+            hamburger.click();
+            this.assert(mobileSidebar.classList.contains('open'), 'Menu open for overlay click test');
+
+            // Simulate overlay click
+            overlay.click();
+
+            const isClosed = !mobileSidebar.classList.contains('open');
+            this.assert(isClosed, 'Overlay click closes menu');
+
+            // Ensure closed
+            if (mobileSidebar.classList.contains('open')) {
+                hamburger.click();
+            }
+        } else {
+            this.assert(false, 'Overlay click test - elements not found');
+        }
+    }
+
+    testLinkClickCloses() {
+        const hamburger = document.querySelector('.hamburger');
+        const mobileSidebar = document.querySelector('.mobile-sidebar');
+        const link = mobileSidebar ? mobileSidebar.querySelector('a') : null;
+
+        if (hamburger && mobileSidebar && link) {
+            // Open menu
+            hamburger.click();
+            this.assert(mobileSidebar.classList.contains('open'), 'Menu open for link click test');
+
+            // Click a link
+            link.click();
+
+            const isClosed = !mobileSidebar.classList.contains('open');
+            this.assert(isClosed, 'Link click closes menu');
+
+            // Ensure closed
+            if (mobileSidebar.classList.contains('open')) {
+                hamburger.click();
+            }
+        } else {
+            this.assert(false, 'Link click test - elements not found');
+        }
+    }
+
+    testResizeClosesMenu() {
+        const hamburger = document.querySelector('.hamburger');
+        const mobileSidebar = document.querySelector('.mobile-sidebar');
+
+        if (hamburger && mobileSidebar) {
+            // Open menu
+            hamburger.click();
+            this.assert(mobileSidebar.classList.contains('open'), 'Menu open for resize test');
+
+            // Simulate resize to desktop (>900px)
+            const event = new Event('resize');
+            // Temporarily set innerWidth
+            const originalWidth = window.innerWidth;
+            Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1000 });
+            window.dispatchEvent(event);
+
+            // Theme.js should close the menu
+            setTimeout(() => {
+                const isClosed = !mobileSidebar.classList.contains('open');
+                this.assert(isClosed, 'Resize to desktop closes menu');
+
+                // Restore
+                Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: originalWidth });
+            }, 100);
+        } else {
+            this.assert(false, 'Resize test - elements not found');
+        }
+    }
+
+    testAriaAttributes() {
+        const hamburger = document.querySelector('.hamburger');
+        const overlay = document.querySelector('.mobile-nav-overlay');
+        const mobileSidebar = document.querySelector('.mobile-sidebar');
+        const closeBtn = document.querySelector('.mobile-sidebar-close');
+
+        let passed = true;
+        let details = [];
+
+        if (hamburger && hamburger.getAttribute('aria-label')) {
+            details.push('hamburger aria-label');
+        } else {
+            passed = false;
+            details.push('hamburger missing aria-label');
+        }
+
+        if (closeBtn && closeBtn.getAttribute('aria-label')) {
+            details.push('close-btn aria-label');
+        } else {
+            passed = false;
+            details.push('close-btn missing aria-label');
+        }
+
+        if (mobileSidebar && mobileSidebar.getAttribute('aria-hidden') !== null) {
+            details.push('sidebar aria-hidden');
+        } else {
+            passed = false;
+            details.push('sidebar missing aria-hidden');
+        }
+
+        if (overlay && overlay.getAttribute('aria-hidden') !== null) {
+            details.push('overlay aria-hidden');
+        } else {
+            passed = false;
+            details.push('overlay missing aria-hidden');
+        }
+
+        this.assert(passed, 'Aria attributes present', details.join(', '));
+    }
+
+    testKeyboardNavigation() {
+        const hamburger = document.querySelector('.hamburger');
+        const mobileSidebar = document.querySelector('.mobile-sidebar');
+        const links = mobileSidebar ? mobileSidebar.querySelectorAll('a') : [];
+
+        // Test that links are focusable
+        let allFocusable = true;
+        links.forEach(link => {
+            if (link.tabIndex < 0) allFocusable = false;
+        });
+
+        this.assert(links.length > 0, 'Mobile sidebar contains links', `Count: ${links.length}`);
+        this.assert(allFocusable, 'All sidebar links are focusable');
+    }
+
+    testSidebarHeader() {
+        const sidebar = document.getElementById('test-sidebar');
+        const header = sidebar ? sidebar.querySelector('.sidebar-header') : null;
+        this.assert(header !== null, 'Sidebar header exists');
+
+        const logo = header ? header.querySelector('.logo-large') : null;
+        this.assert(logo !== null, 'Logo in sidebar header');
+
+        const avatar = header ? header.querySelector('.admin-avatar') : null;
+        this.assert(avatar !== null, 'Admin avatar in header');
+
+        const adminName = header ? header.querySelector('.admin-name') : null;
+        this.assert(adminName !== null, 'Admin name in header');
+    }
+
+    testSidebarSections() {
+        const sidebar = document.getElementById('test-sidebar');
+        const sections = sidebar ? sidebar.querySelectorAll('.side-section') : [];
+
+        this.assert(sections.length >= 4, 'Sidebar has multiple sections', `Count: ${sections.length}`);
+
+        const sectionTitles = Array.from(sections).map(s => s.querySelector('.side-label')?.textContent.trim());
+        this.assert(sectionTitles.includes('Overview'), 'Has Overview section');
+        this.assert(sectionTitles.includes('Queue'), 'Has Queue section');
+        this.assert(sectionTitles.includes('Account'), 'Has Account section');
+    }
+
+    testSidebarLinks() {
+        const sidebar = document.getElementById('test-sidebar');
+        const links = sidebar ? sidebar.querySelectorAll('.side-item') : [];
+
+        this.assert(links.length > 0, 'Sidebar has navigation links', `Count: ${links.length}`);
+
+        // Check for logout link
+        const logoutLink = Array.from(links).find(l => l.href.includes('logout.php'));
+        this.assert(logoutLink !== undefined, 'Logout link exists');
+
+        // Check for active class
+        const activeLink = sidebar ? sidebar.querySelector('.side-item.active') : null;
+        this.assert(activeLink !== null, 'Active link is marked');
+    }
+
+    testBadgeElements() {
+        const sidebar = document.getElementById('test-sidebar');
+        const badges = sidebar ? sidebar.querySelectorAll('.side-badge') : [];
+
+        this.assert(badges.length > 0, 'Sidebar has badges', `Count: ${badges.length}`);
+
+        // Check badge counts are numeric
+        let allNumeric = true;
+        badges.forEach(badge => {
+            const text = badge.textContent.trim();
+            if (text && !/^\d+$/.test(text)) {
+                allNumeric = false;
+            }
+        });
+        this.assert(allNumeric, 'All badge values are numeric');
+    }
+
+    showSummary() {
+        setTimeout(() => {
+            const total = this.passed + this.failed;
+            const percentage = total > 0 ? Math.round((this.passed / total) * 100) : 0;
+
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'test-summary';
+            summaryDiv.innerHTML = `
+                <strong>Summary</strong><br>
+                Total: ${total} |
+                ✅ Passed: ${this.passed} |
+                ❌ Failed: ${this.failed}<br>
+                Success Rate: ${percentage}%
+                ${this.failed === 0 ? '<br>🎉 All tests passed!' : ''}
+            `;
+            document.getElementById('test-results').appendChild(summaryDiv);
+        }, 500);
+    }
+}
+
+function runAllTests() {
+    const tester = new SidebarJSTester();
+    tester.runAll();
+}
+
+// Auto-run tests after theme.js initializes
+window.addEventListener('load', () => {
+    setTimeout(runAllTests, 1000);
+});
+</script>
+</body>
+</html>

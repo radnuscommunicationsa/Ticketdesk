@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin Dashboard Mobile Test</title>
+<style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .test-frame {
+        width: 100%; height: 600px;
+        border: 2px solid #333;
+        margin-top: 20px;
+    }
+    .controls {
+        margin: 20px 0;
+        padding: 15px;
+        background: #f5f5f5;
+        border-radius: 8px;
+    }
+    .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+    }
+    .pass { background: #d4edda; color: #155724; }
+    .fail { background: #f8d7da; color: #721c24; }
+    button {
+        padding: 10px 20px;
+        margin: 5px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+</style>
+</head>
+<body>
+<h1>🔧 Admin Dashboard Mobile Sidebar Diagnostic</h1>
+
+<div class="controls">
+    <button onclick="testInFrame('desktop')">Test Desktop View</button>
+    <button onclick="testInFrame('mobile')">Test Mobile View (375px)</button>
+    <button onclick="runJSInline()">Run JS Tests on This Page</button>
+    <div style="margin-top:10px">
+        <strong>Open DevTools Console (F12) to see errors</strong>
+    </div>
+</div>
+
+<div id="inline-results"></div>
+
+<iframe id="testFrame" class="test-frame" src="admin/dashboard.php"></iframe>
+
+<script>
+function testInFrame(mode) {
+    const frame = document.getElementById('testFrame');
+    const innerWindow = frame.contentWindow;
+
+    if (mode === 'mobile') {
+        frame.style.width = '375px';
+        frame.style.height = '667px';
+    } else {
+        frame.style.width = '100%';
+        frame.style.height = '600px';
+    }
+
+    // Wait for iframe to load then test
+    setTimeout(() => {
+        runTestsInFrame(innerWindow, mode);
+    }, 1000);
+}
+
+function runTestsInFrame(win, mode) {
+    const results = [];
+
+    // Test 1: Check if sidebar exists
+    const sidebar = win.document.querySelector('.sidebar');
+    results.push({
+        name: 'Sidebar element exists',
+        passed: sidebar !== null,
+        details: sidebar ? 'Found .sidebar' : 'Not found'
+    });
+
+    // Test 2: Check if sidebar-header exists
+    const sidebarHeader = win.document.querySelector('.sidebar .sidebar-header');
+    results.push({
+        name: 'Sidebar header exists (desktop)',
+        passed: sidebarHeader !== null,
+        details: sidebarHeader ? 'Found gradient header' : 'Not found'
+    });
+
+    // Test 3: Check for logo-large
+    const logoLarge = win.document.querySelector('.logo-large');
+    results.push({
+        name: 'Logo-large element exists',
+        passed: logoLarge !== null,
+        details: logoLarge ? 'Found logo' : 'Not found'
+    });
+
+    // Test 4: Check for admin-quick
+    const adminQuick = win.document.querySelector('.admin-quick');
+    results.push({
+        name: 'Admin quick info exists',
+        passed: adminQuick !== null,
+        details: adminQuick ? 'Found admin info' : 'Not found'
+    });
+
+    // Test 5: Check if topbar has logo-compact
+    const logoCompact = win.document.querySelector('.logo-compact');
+    results.push({
+        name: 'Compact logo in topbar',
+        passed: logoCompact !== null,
+        details: logoCompact ? 'Found .logo-compact' : 'Not found - check admin/dashboard.php'
+    });
+
+    // Test 6: Check if JavaScript loaded
+    const hasClassList = typeof win.document.querySelector('.sidebar')?.classList !== 'undefined';
+    results.push({
+        name: 'JavaScript loaded (classList available)',
+        passed: hasClassList,
+        details: hasClassList ? 'DOM API working' : 'JS not loaded'
+    });
+
+    // Test 7: Check if mobile sidebar was created
+    const mobileSidebar = win.document.querySelector('.mobile-sidebar');
+    results.push({
+        name: 'Mobile sidebar created (JS ran)',
+        passed: mobileSidebar !== null,
+        details: mobileSidebar ? 'Found .mobile-sidebar' : 'JS may have exited early (no sidebar?)'
+    });
+
+    // Test 8: Check if mobile header exists
+    const mobileHeader = win.document.querySelector('.mobile-header');
+    results.push({
+        name: 'Mobile header created',
+        passed: mobileHeader !== null,
+        details: mobileHeader ? 'Found .mobile-header' : 'Not created'
+    });
+
+    // Test 9: Check if close button exists
+    const closeBtn = win.document.querySelector('.mobile-sidebar-close');
+    results.push({
+        name: 'Close button exists',
+        passed: closeBtn !== null,
+        details: closeBtn ? 'Found close button' : 'Not found'
+    });
+
+    // Test 10: Check if overlay exists
+    const overlay = win.document.querySelector('.mobile-nav-overlay');
+    results.push({
+        name: 'Overlay created',
+        passed: overlay !== null,
+        details: overlay ? 'Found overlay' : 'Not found'
+    });
+
+    // Output results
+    let html = `<h3>Test Results (${mode === 'mobile' ? 'Mobile' : 'Desktop'} View)</h3>`;
+    let passCount = 0;
+
+    results.forEach(r => {
+        if (r.passed) passCount++;
+        html += `<div class="status ${r.passed ? 'pass' : 'fail'}">
+            ${r.passed ? '✅' : '❌'} ${r.name}<br>
+            <small>${r.details}</small>
+        </div>`;
+    });
+
+    html = `<div style="margin:10px;padding:10px;background:${passCount===results.length?'#d4edda':'#fff3cd'};border-radius:8px">
+        <strong>Summary: ${passCount}/${results.length} tests passed</strong>
+    </div>` + html;
+
+    const resultsDiv = mode === 'mobile' ? document.getElementById('mobile-results') : document.getElementById('desktop-results');
+    if (resultsDiv) {
+        resultsDiv.innerHTML = html;
+    } else {
+        const newDiv = document.createElement('div');
+        newDiv.id = mode + '-results';
+        newDiv.innerHTML = html;
+        document.querySelector('.controls').after(newDiv);
+    }
+}
+
+function runJSInline() {
+    // Simple tests on the current page (test page itself)
+    const results = document.getElementById('inline-results');
+    results.innerHTML = '<h3>Quick Diagnostics</h3>';
+
+    // Check if we can access the iframe's document
+    const frame = document.getElementById('testFrame');
+    if (!frame || !frame.contentWindow) {
+        results.innerHTML += '<div class="status fail">❌ Cannot access iframe</div>';
+        return;
+    }
+
+    results.innerHTML += '<div class="status pass">✅ Iframe accessible</div>';
+    results.innerHTML += '<div class="status info">ℹ️ Click "Test Desktop View" or "Test Mobile View" to run full tests</div>';
+}
+
+// Auto-run on load
+window.addEventListener('load', () => {
+    setTimeout(() => runJSInline(), 1000);
+});
+</script>
+</body>
+</html>

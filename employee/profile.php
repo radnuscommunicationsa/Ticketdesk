@@ -53,9 +53,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'passw
         $success = 'Password changed successfully!';
     }
 }
-
-function initials($n){$p=explode(' ',$n);return strtoupper(substr($p[0],0,1).(isset($p[1])?substr($p[1],0,1):''));}
-function avatarColor($n){$c=['#EF4444','#F59E0B','#10B981','#3B82F6','#EC4899','#8B5CF6','#14B8A6','#5552DD','#1565c0'];$h=0;foreach(str_split($n)as $ch)$h+=ord($ch);return $c[$h%count($c)];}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -122,7 +119,7 @@ function avatarColor($n){$c=['#EF4444','#F59E0B','#10B981','#3B82F6','#EC4899','
         <div class="card-header"><div class="card-title"><i class="fa-solid fa-user"></i> Personal Information</div></div>
         <div class="card-body">
           <div style="text-align:center;margin-bottom:1.5rem">
-            <div class="profile-avatar" style="background:<?= avatarColor($user['name']) ?>"><?= initials($user['name']) ?></div>
+            <div class="profile-avatar" style="background:<?= avatarColor($user['name'], 'employee') ?>"><?= initials($user['name']) ?></div>
             <div style="font-size:0.75rem;color:var(--text-muted)"><?= sanitize($user['emp_id']) ?> &nbsp;·&nbsp; <span class="dept-badge"><?= sanitize($user['department']) ?></span></div>
           </div>
           <form method="POST">

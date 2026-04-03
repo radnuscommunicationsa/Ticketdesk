@@ -1,31 +1,29 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 requireAdmin();
-$admin_notif_count = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE emp_id=" . (int)$_SESSION['user_id'] . " AND is_read=0")->fetchColumn();
 
-// Stats
-$total    = $pdo->query("SELECT COUNT(*) FROM tickets")->fetchColumn();
-$critical = $pdo->query("SELECT COUNT(*) FROM tickets WHERE priority='critical' AND status NOT IN ('resolved','closed')")->fetchColumn();
-$inprog   = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status='in-progress'")->fetchColumn();
-$resolved = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status IN ('resolved','closed')")->fetchColumn();
+// Get counts with error handling
+try {
+    $admin_notif_count = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE emp_id=" . (int)$_SESSION['user_id'] . " AND is_read=0")->fetchColumn();
 
-// Recent tickets
-$tickets = $pdo->query("
-    SELECT t.*, e.name as emp_name, e.department
-    FROM tickets t
-    JOIN employees e ON t.emp_id = e.id
-    ORDER BY t.created_at DESC
-    LIMIT 10
-")->fetchAll();
+    // Stats
+    $total    = $pdo->query("SELECT COUNT(*) FROM tickets")->fetchColumn();
+    $critical = $pdo->query("SELECT COUNT(*) FROM tickets WHERE priority='critical' AND status NOT IN ('resolved','closed')")->fetchColumn();
+    $inprog   = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status='in-progress'")->fetchColumn();
+    $resolved = $pdo->query("SELECT COUNT(*) FROM tickets WHERE status IN ('resolved','closed')")->fetchColumn();
 
-function avatarColor($name) {
-    $colors = ['#5552DD','#7B7AFF','#10B981','#F59E0B','#3B82F6','#EC4899','#8B5CF6','#14B8A6'];
-    $h = 0; foreach (str_split($name) as $c) $h += ord($c);
-    return $colors[$h % count($colors)];
-}
-function initials($name) {
-    $parts = explode(' ', $name);
-    return strtoupper(substr($parts[0],0,1) . (isset($parts[1]) ? substr($parts[1],0,1) : ''));
+    // Recent tickets
+    $tickets = $pdo->query("
+        SELECT t.*, e.name as emp_name, e.department
+        FROM tickets t
+        JOIN employees e ON t.emp_id = e.id
+        ORDER BY t.created_at DESC
+        LIMIT 10
+    ")->fetchAll();
+} catch (PDOException $e) {
+    error_log('Dashboard query error: ' . $e->getMessage());
+    $admin_notif_count = $total = $critical = $inprog = $resolved = 0;
+    $tickets = [];
 }
 ?>
 <!DOCTYPE html>
@@ -39,7 +37,7 @@ function initials($name) {
 </head>
 <body>
 <div class="topbar">
-  <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span> <span style="font-size:0.7rem;color:var(--text-muted);margin-left:6px;font-weight:400">ADMIN</span></div>
+  <div class="logo-compact"><i class="fa-solid fa-shield-halved"></i></div>
   <div class="topbar-nav">
     <a href="dashboard.php" class="active">Dashboard</a>
     <a href="tickets.php">Tickets</a>

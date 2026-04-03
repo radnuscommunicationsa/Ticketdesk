@@ -1,7 +1,15 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 requireAdmin();
-$admin_notif_count = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE emp_id=" . (int)$_SESSION['user_id'] . " AND is_read=0")->fetchColumn();
+
+try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE emp_id = ? AND is_read = 0");
+    $stmt->execute([$_SESSION['user_id'] ?? 0]);
+    $admin_notif_count = (int)$stmt->fetchColumn();
+} catch (PDOException $e) {
+    error_log('Notifications query error: ' . $e->getMessage());
+    $admin_notif_count = 0;
+}
 
 $success = $error = '';
 
