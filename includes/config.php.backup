@@ -1,7 +1,4 @@
 <?php
-// Set timezone to prevent token expiry issues
-date_default_timezone_set('Asia/Kolkata');
-
 // ============================================================
 // ✅ AUTO DETECT: Works on BOTH Localhost & Railway
 // ============================================================
@@ -45,7 +42,7 @@ if ($is_railway) {
 // Railway: Use environment variables for SMTP
 // Localhost: Will use PHP mail() function (configure sendmail in xampp/sendmail/)
 // OR can use SMTP directly by setting SMTP_* environment variables
-define('EMAIL_DEBUG', getenv('EMAIL_DEBUG') ?: true); // Set to true for detailed logs
+define('EMAIL_DEBUG', getenv('EMAIL_DEBUG') ?: false); // Set to true for detailed logs
 
 // ════════════════════════════════════════════════════════════════════════════════
 // IMMEDIATE FIX: Override PHP mail() configuration if SMTP not set
@@ -56,21 +53,14 @@ if (!getenv('SMTP_HOST') && !ini_get('SMTP')) {
     // User should replace these with their actual credentials in sendmail.ini or httpd-xampp.conf
     @ini_set('SMTP', 'smtp.gmail.com');
     @ini_set('smtp_port', 587);
-    @ini_set('sendmail_from', 'radnuscommunicationsa@gmail.com');
+    @ini_set('sendmail_from', 'your-email@gmail.com');
     error_log('ℹ️ PHP mail() SMTP overridden to smtp.gmail.com:587. Configure SMTP_USER/SMTP_PASS in sendmail.ini or use SMTP directly via SetEnv.');
 }
-
-// ════════════════════════════════════════════════════════════════════════════════
-// ⚡ EMAIL CONFIGURATION - GET GMAIL APP PASSWORD FIRST!
-// ════════════════════════════════════════════════════════════════════════════════
-// 1. Get 2FA enabled: https://myaccount.google.com/security
-// 2. Click "App passwords"
-// 3. Generate for "TicketDesk" (16-digit code)
-// 4. Paste below REPLACING the placeholder
-// ════════════════════════════════════════════════════════════════════════════════
-
-
-// ════════════════════════════════════════════════════════════════════════════════
+  putenv('SMTP_HOST=smtp.gmail.com');
+  putenv('SMTP_PORT=587');
+  putenv('SMTP_USER=radnuscommunicationsa@gmail.com');   
+  putenv('SMTP_PASS=mkryixkvuirjmaxj'); 
+  putenv('SMTP_SECURE=tls');
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Generate CSRF token if not exists
@@ -148,7 +138,7 @@ function generateResetToken($pdo, $emp_id) {
 
 function verifyResetToken($pdo, $token) {
     $stmt = $pdo->prepare("
-        SELECT prt.*, e.id AS employee_id, e.email, e.name, e.emp_id
+        SELECT prt.*, e.email, e.name, e.emp_id
         FROM password_reset_tokens prt
         JOIN employees e ON prt.emp_id = e.id
         WHERE prt.token = ?

@@ -12,7 +12,11 @@
       "Bash(curl -sL https://github.com/PHPMailer/PHPMailer/archive/refs/tags/v6.9.1.tar.gz)",
       "Bash(tar -xz --strip=1 -C vendor/)",
       "Bash(mkdir -p vendor/PHPMailer)",
-      "Bash(exit 1)"
+      "Bash(exit 1)",
+      "Bash(net stop:*)",
+      "Bash(net start:*)",
+      "Bash(/c/xampp/apache_stop.bat)",
+      "Bash(/c/xampp/apache_start.bat)"
     ]
   }
 }

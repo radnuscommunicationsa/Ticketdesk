@@ -74,15 +74,37 @@ header('Content-Type: text/html');
             echo '</table>';
             echo '<p class="warning">⚠️ SMTP will be used for sending emails (overrides PHP mail())</p>';
         } else {
-            echo '<p class="warning">⚠️ SMTP is <strong>NOT CONFIGURED</strong></p>';
-            echo '<p>Falling back to PHP <code>mail()</code> function. To use SMTP (recommended for Railway), set these environment variables:</p>';
-            echo '<pre>
-SMTP_HOST=your-smtp-server.com
-SMTP_PORT=587
-SMTP_USER=your-email@example.com
-SMTP_PASS=your-password-or-api-key
-SMTP_SECURE=tls
-            </pre>';
+            echo '<div class="error" style="background: #fef2f2; padding: 1rem; border-radius: 6px; margin-top: 1rem; border-left: 4px solid #dc2626;">';
+            echo '<h3>❌ SMTP NOT CONFIGURED - Emails Will NOT Work!</h3>';
+            echo '<p>The system will fall back to PHP <code>mail()</code>, which is <strong>not configured on your XAMPP</strong> and will fail with "Failed to connect to mailserver at localhost port 25".</p>';
+            echo '<p><strong>⚡ QUICK FIX (choose one):</strong></p>';
+            echo '<ol>';
+            echo '<li><strong>One-Click Setup (Easiest - 2 minutes, no restart):</strong><br>';
+            echo '    <a href="one_click_email_setup.php" class="btn" style="display: inline-block; background: #dc2626; color: white; padding: 8px 16px; text-decoration: none; border-radius: 6px; margin: 5px 0;">⚡ Run One-Click Setup</a><br>';
+            echo '    Enter your Gmail and App Password, click configure, done!</li>';
+            echo '<li><strong>Set Environment Variables (Permanent):</strong><br>';
+            echo '    Edit <code>C:\xampp\apache\conf\extra\httpd-xampp.conf</code><br>';
+            echo '    Add inside &lt;IfModule env_module&gt;:<br>';
+            echo '    <pre style="background: #f8f8f8; padding: 10px; border-radius: 4px; font-size: 0.85rem;">
+SetEnv SMTP_HOST smtp.gmail.com
+SetEnv SMTP_PORT 587
+SetEnv SMTP_USER your-email@gmail.com
+SetEnv SMTP_PASS your-gmail-app-password
+SetEnv SMTP_SECURE tls</pre>';
+            echo '    Then restart Apache via XAMPP Control Panel</li>';
+            echo '<li><strong>Configure sendmail.ini:</strong><br>';
+            echo '    Edit <code>C:\xampp\sendmail\sendmail.ini</code><br>';
+            echo '    Set: <code>auth_username=your-email@gmail.com</code><br>';
+            echo '         <code>auth_password=your-gmail-app-password</code><br>';
+            echo '    Restart Apache</li>';
+            echo '</ol>';
+            echo '<p><strong>⚠️ Required: Get Gmail App Password</strong><br>';
+            echo '   Google no longer accepts regular passwords. You must create an App Password:<br>';
+            echo '   1. Enable 2FA: <a href="https://myaccount.google.com/security" target="_blank">Google Security</a><br>';
+            echo '   2. Click "App passwords"<br>';
+            echo '   3. Generate for "TicketDesk"<br>';
+            echo '   4. Copy the 16-digit password</p>';
+            echo '</div>';
         }
         ?>
     </div>
@@ -214,17 +236,49 @@ if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') 
 
 <?php
 function showRecentLogs($lines = 50) {
-    // Read the last N lines of PHP error log
-    $logFile = ini_get('error_log') ?: 'C:\xampp\php\logs\php_error.log';
+    // Common XAMPP error log paths on Windows
+    $possibleLogs = [
+        ini_get('error_log'),
+        'C:/xampp/php/logs/php_error.log',
+        'C:/xampp/php/logs/php_errors.log',
+        'C:/xampp/apache/logs/error.log',
+        'C:/xampp/apache/logs/php_error.log',
+        __DIR__ . '/../php/logs/php_error.log',
+    ];
 
-    if (!file_exists($logFile)) {
-        echo "Error log not found at: $logFile\n";
+    $logFile = null;
+    foreach ($possibleLogs as $path) {
+        if ($path && file_exists($path)) {
+            $logFile = $path;
+            break;
+        }
+    }
+
+    if (!$logFile) {
+        // Try to find any recent PHP error log
+        $candidates = glob('C:/xampp/*/logs/*.log');
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate) && is_readable($candidate)) {
+                $logFile = $candidate;
+                break;
+            }
+        }
+    }
+
+    if (!$logFile || !file_exists($logFile)) {
+        echo "⚠️  Could not find PHP error log. Common locations checked:\n";
+        foreach ($possibleLogs as $path) {
+            echo "   - $path\n";
+        }
+        echo "\nPlease check your php.ini for error_log setting.\n";
         return;
     }
 
-    $file = file($logFile);
+    echo "📖 Reading from: $logFile\n\n";
+
+    $file = @file($logFile);
     if (!$file) {
-        echo "Could not read error log\n";
+        echo "❌ Could not read error log (permission denied)\n";
         return;
     }
 
@@ -232,17 +286,19 @@ function showRecentLogs($lines = 50) {
     $startLine = max(0, $totalLines - $lines);
 
     $output = '';
+    $found = false;
     for ($i = $startLine; $i < $totalLines; $i++) {
         $line = rtrim($file[$i]);
         // Only show lines with email, SMTP, or password reset
         if (stripos($line, 'email') !== false || stripos($line, 'smtp') !== false ||
             stripos($line, 'password reset') !== false || stripos($line, '✅') !== false ||
-            stripos($line, '❌') !== false) {
+            stripos($line, '❌') !== false || stripos($line, 'mail()') !== false) {
             $output .= $line . "\n";
+            $found = true;
         }
     }
 
-    echo $output ?: "No recent email-related logs found";
+    echo $output ?: "No recent email-related logs found. Try enabling DEBUG mode in config.php";
 }
 ?>
 </body>

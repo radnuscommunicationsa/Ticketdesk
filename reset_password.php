@@ -11,7 +11,7 @@ $errors = [];
 if (empty($token)) {
     $error = 'Invalid reset token. Please request a new password reset link.';
 } else {
-    $resetData = verifyResetToken($token);
+    $resetData = verifyResetToken($pdo, $token);
 
     if (!$resetData) {
         $error = 'Invalid or expired reset token. Please request a new password reset link.';
@@ -51,12 +51,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($error)) {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
         $stmt = $pdo->prepare("UPDATE employees SET password = ? WHERE id = ?");
-        $stmt->execute([$hashedPassword, $resetData['id']]);
+        $stmt->execute([$hashedPassword, $resetData['employee_id']]);
 
-        // Mark token as used
-        markTokenUsed($pdo, $token);
-
-        $success = 'Your password has been successfully reset. You can now log in with your new password.';
+        if ($stmt->rowCount() > 0) {
+            // Mark token as used only if password was actually updated
+            markTokenUsed($pdo, $token);
+            $success = 'Your password has been successfully reset. You can now log in with your new password.';
+        } else {
+            // This shouldn't happen if token is valid, but handle it gracefully
+            $error = 'Failed to update password. Please try again or contact support.';
+            error_log('Password reset failed: No rows updated for employee_id=' . $resetData['employee_id'] . ' token=' . $token);
+        }
     } else {
         $error = 'Please fix the errors below.';
     }
