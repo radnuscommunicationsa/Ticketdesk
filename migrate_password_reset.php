@@ -42,18 +42,22 @@ if (php_sapi_name() === 'cli' || isset($_GET['secret']) && $_GET['secret'] === '
                 echo "⚠️  Missing indexes: " . implode(', ', $missingIndexes) . "\n";
                 echo "Creating missing indexes...\n";
 
-                $sqlIndexes = [
-                    "CREATE INDEX idx_password_reset_token ON password_reset_tokens(token)",
-                    "CREATE INDEX idx_password_reset_emp_id ON password_reset_tokens(emp_id)",
-                    "CREATE INDEX idx_password_reset_expires ON password_reset_tokens(expires_at)"
-                ];
+                foreach ($missingIndexes as $idxName) {
+                    $sql = "CREATE INDEX $idxName ON password_reset_tokens(";
+                    if ($idxName === 'idx_password_reset_token') {
+                        $sql .= "token";
+                    } elseif ($idxName === 'idx_password_reset_emp_id') {
+                        $sql .= "emp_id";
+                    } elseif ($idxName === 'idx_password_reset_expires') {
+                        $sql .= "expires_at";
+                    }
+                    $sql .= ")";
 
-                foreach ($sqlIndexes as $sql) {
                     try {
                         $pdo->exec($sql);
-                        echo "   ✅ Created: " . str_replace('CREATE INDEX ', '', $sql) . "\n";
+                        echo "   ✅ Created: $idxName\n";
                     } catch (PDOException $e) {
-                        echo "   ❌ Failed: " . $e->getMessage() . "\n";
+                        echo "   ❌ Failed to create $idxName: " . $e->getMessage() . "\n";
                     }
                 }
             }
