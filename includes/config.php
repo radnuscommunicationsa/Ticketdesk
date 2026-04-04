@@ -472,7 +472,8 @@ function sendEmailMail($to, $name, $subject, $htmlMessage, $plainMessage, $token
         error_log("   Subject: $subject");
         error_log("   To: $to");
         error_log("   Headers: " . substr($headers, 0, 200) . "...");
-        error_log("   PHP error: " . error_get_last()['message'] ?? 'Unknown error');
+        $lastError = error_get_last();
+        error_log("   PHP error: " . ($lastError['message'] ?? 'Unknown error'));
         return false;
     }
 }
