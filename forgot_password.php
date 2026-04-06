@@ -49,8 +49,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 error_log("✅ Email sent successfully to: {$employee['email']}");
             } else {
                 $error = 'Failed to send reset email. Please try again or contact support.';
-                error_log("❌ Email sending FAILED to: {$employee['email']}");
-                error_log("   Check railway_email_test.php to diagnose SMTP configuration");
+
+                // Collect debug info
+                $debugLines = [];
+                $debugLines[] = "To: {$employee['email']}";
+                $debugLines[] = "SMTP_HOST: " . (getenv('SMTP_HOST') ?: 'NOT SET');
+                $debugLines[] = "SMTP_USER: " . (getenv('SMTP_USER') ?: 'NOT SET');
+                $debugLines[] = "SMTP_PASS: " . (getenv('SMTP_PASS') ? '***SET***' : 'NOT SET');
+                $debugLines[] = "SENDGRID_API_KEY: " . (getenv('SENDGRID_API_KEY') ? '***SET***' : 'NOT SET');
+                $debugLines[] = "EMAIL_DEBUG: " . (getenv('EMAIL_DEBUG') ?: 'false (default)');
+
+                $lastError = error_get_last();
+                if ($lastError) {
+                    $debugLines[] = "Last PHP Error: " . $lastError['message'];
+                }
+
+                error_log("❌ EMAIL FAILED DEBUG:");
+                foreach ($debugLines as $line) {
+                    error_log("   $line");
+                }
+
+                // Show debug on page if EMAIL_DEBUG is true
+                if (getenv('EMAIL_DEBUG') === 'true') {
+                    $error .= '<br><br><details><summary style="color:#f59e0b;cursor:pointer;font-size:0.85rem;">🔍 Debug Info (click)</summary><pre style="background:#1a1a2e;color:#e2e8f0;padding:10px;border-radius:4px;margin-top:8px;font-size:0.75rem;overflow:auto;max-height:200px;">' . htmlspecialchars(implode("\n", $debugLines)) . '</pre></details>';
+                }
             }
         }
     } else {
