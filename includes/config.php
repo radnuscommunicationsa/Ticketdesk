@@ -48,17 +48,12 @@ if ($is_railway) {
 define('EMAIL_DEBUG', getenv('EMAIL_DEBUG') ?: true); // Set to true for detailed logs
 
 // ════════════════════════════════════════════════════════════════════════════════
-// IMMEDIATE FIX: Override PHP mail() configuration if SMTP not set
-// This fixes the "Failed to connect to mailserver at localhost port 25" error
+// EMAIL CONFIGURATION
 // ════════════════════════════════════════════════════════════════════════════════
-if (!getenv('SMTP_HOST') && !ini_get('SMTP')) {
-    // Set default SMTP to Gmail to avoid localhost:25 error
-    // User should replace these with their actual credentials in sendmail.ini or httpd-xampp.conf
-    @ini_set('SMTP', 'smtp.gmail.com');
-    @ini_set('smtp_port', 587);
-    @ini_set('sendmail_from', 'radnuscommunicationsa@gmail.com');
-    error_log('ℹ️ PHP mail() SMTP overridden to smtp.gmail.com:587. Configure SMTP_USER/SMTP_PASS in sendmail.ini or use SMTP directly via SetEnv.');
-}
+// Railway: Set SMTP_* environment variables (see RAILWAY_EMAIL_SETUP.md)
+// Localhost: Configure XAMPP sendmail or set SMTP_* variables
+// Default EMAIL_DEBUG to false for production safety
+define('EMAIL_DEBUG', getenv('EMAIL_DEBUG') === 'true'); // Only true if explicitly set
 
 // ════════════════════════════════════════════════════════════════════════════════
 // ⚡ EMAIL CONFIGURATION - GET GMAIL APP PASSWORD FIRST!
@@ -203,7 +198,7 @@ function sendPasswordResetEmail($to, $name, $token) {
             </div>
         </div>
     </body>
-    </html>";
+    </html>");
 
     // Plain text version
     $plainMessage = "TicketDesk - Password Reset\n\n";
@@ -215,6 +210,20 @@ function sendPasswordResetEmail($to, $name, $token) {
     $plainMessage .= "If you did not request this reset, please ignore this email. Your account remains secure.\n\n";
     $plainMessage .= "© " . date('Y') . " TicketDesk. All rights reserved.\n";
     $plainMessage .= "IT Support Portal\n";
+
+    // Check for SendGrid API key (preferred - works on Railway)
+    $sendgrid_api_key = getenv('SENDGRID_API_KEY');
+    $sendgrid_from_email = getenv('SENDGRID_FROM_EMAIL') ?: (getenv('SMTP_USER') ?: SITE_NAME . ' <noreply@' . $_SERVER['SERVER_NAME'] . '>');
+    $sendgrid_from_name = getenv('SENDGRID_FROM_NAME') ?: SITE_NAME;
+
+    if ($sendgrid_api_key) {
+        // Use SendGrid API
+        return sendEmailSendGrid($to, $name, $subject, $message, $plainMessage, [
+            'api_key' => $sendgrid_api_key,
+            'from_email' => $sendgrid_from_email,
+            'from_name' => $sendgrid_from_name
+        ], $token);
+    }
 
     // Check for SMTP configuration via environment variables
     $smtp_host = getenv('SMTP_HOST');
@@ -234,8 +243,11 @@ function sendPasswordResetEmail($to, $name, $token) {
             'from_name' => SITE_NAME
         ], $token);
     } else {
-        // Use PHP mail() function
-        return sendEmailMail($to, $name, $subject, $message, $plainMessage, $token);
+        // No SMTP configured - fail explicitly
+        error_log('❌ Email failed: No SMTP configuration found. Set SMTP_HOST, SMTP_USER, SMTP_PASS in Railway Variables.');
+        error_log("   Attempted to send to: $to ($name)");
+        error_log("   Tip: See RAILWAY_EMAIL_SETUP.md for configuration instructions.");
+        return false;
     }
 }
 
@@ -432,6 +444,72 @@ function sendEmailSMTP($to, $name, $subject, $htmlMessage, $plainMessage, $smtp,
         if (isset($socket) && is_resource($socket)) {
             fclose($socket);
         }
+        return false;
+    }
+}
+
+function sendEmailSendGrid($to, $name, $subject, $htmlMessage, $plainMessage, $sg, $token = null) {
+    $apiKey = $sg['api_key'];
+    $fromEmail = $sg['from_email'];
+    $fromName = $sg['from_name'];
+
+    error_log("📧 SendGrid: Attempting to send email to $to ($name)");
+
+    $data = [
+        'personalizations' => [
+            [
+                'to' => [
+                    ['email' => $to, 'name' => $name]
+                ],
+                'subject' => $subject
+            ]
+        ],
+        'from' => [
+            'email' => $fromEmail,
+            'name' => $fromName
+        ],
+        'content' => [
+            [
+                'type' => 'text/plain',
+                'value' => $plainMessage
+            ],
+            [
+                'type' => 'text/html',
+                'value' => $htmlMessage
+            ]
+        ]
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://api.sendgrid.com/v3/mail/send');
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $apiKey,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+
+    if ($error) {
+        error_log("❌ SendGrid cURL error: " . htmlspecialchars($error));
+        return false;
+    }
+
+    if ($httpCode >= 200 && $httpCode < 300) {
+        error_log("✅ Email sent via SendGrid to: $to ($name)");
+        if ($token) {
+            error_log("   Reset link: " . SITE_URL . "/reset_password.php?token=" . $token);
+        }
+        return true;
+    } else {
+        error_log("❌ SendGrid API error: HTTP $httpCode");
+        error_log("   Response: " . substr($response, 0, 500));
         return false;
     }
 }
