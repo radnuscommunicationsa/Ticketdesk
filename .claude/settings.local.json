@@ -16,7 +16,10 @@
       "Bash(net stop:*)",
       "Bash(net start:*)",
       "Bash(/c/xampp/apache_stop.bat)",
-      "Bash(/c/xampp/apache_start.bat)"
+      "Bash(/c/xampp/apache_start.bat)",
+      "Bash(find . -name \"*.php\" -exec grep -l \"mysqli\\\\|mysql_\" {} \\\\;)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }
