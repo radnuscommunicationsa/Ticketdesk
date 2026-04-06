@@ -41,12 +41,6 @@ if ($is_railway) {
     define('SITE_NAME', 'TicketDesk');
 }
 
-// ── ⚙️ EMAIL CONFIGURATION ──
-// Railway: Use environment variables for SMTP
-// Localhost: Will use PHP mail() function (configure sendmail in xampp/sendmail/)
-// OR can use SMTP directly by setting SMTP_* environment variables
-define('EMAIL_DEBUG', getenv('EMAIL_DEBUG') ?: true); // Set to true for detailed logs
-
 // ════════════════════════════════════════════════════════════════════════════════
 // EMAIL CONFIGURATION
 // ════════════════════════════════════════════════════════════════════════════════
@@ -198,7 +192,7 @@ function sendPasswordResetEmail($to, $name, $token) {
             </div>
         </div>
     </body>
-    </html>");
+    </html>";
 
     // Plain text version
     $plainMessage = "TicketDesk - Password Reset\n\n";
