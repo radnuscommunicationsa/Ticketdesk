@@ -237,10 +237,18 @@ function sendPasswordResetEmail($to, $name, $token) {
             'from_name' => SITE_NAME
         ], $token);
     } else {
-        // No SMTP configured - fail explicitly
-        error_log('❌ Email failed: No SMTP configuration found. Set SMTP_HOST, SMTP_USER, SMTP_PASS in Railway Variables.');
+        // No SMTP configured - fail explicitly with detailed info
+        $railway_vars_missing = [];
+        if (!getenv('SMTP_HOST')) $railway_vars_missing[] = 'SMTP_HOST';
+        if (!getenv('SMTP_USER')) $railway_vars_missing[] = 'SMTP_USER';
+        if (!getenv('SMTP_PASS')) $railway_vars_missing[] = 'SMTP_PASS';
+
+        error_log('❌ Email FAILED: SMTP not configured on Railway.');
         error_log("   Attempted to send to: $to ($name)");
-        error_log("   Tip: See RAILWAY_EMAIL_SETUP.md for configuration instructions.");
+        error_log("   Missing environment variables: " . implode(', ', $railway_vars_missing));
+        error_log("   Current environment: " . (getenv('RAILWAY_ENVIRONMENT') ?: 'local') . " | SITE_URL: " . SITE_URL);
+        error_log("   Tip: Set these in Railway Dashboard → Variables (see RAILWAY_EMAIL_SETUP.md)");
+        error_log("   Or use test page: " . SITE_URL . "/railway_email_test.php");
         return false;
     }
 }

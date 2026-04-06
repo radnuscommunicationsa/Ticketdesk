@@ -37,13 +37,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Generate reset token
             $token = generateResetToken($pdo, $employee['id']);
 
+            // Log the attempt
+            error_log("🔑 Password reset attempt for: {$employee['email']} ({$employee['name']})");
+            error_log("   Token generated: " . substr($token, 0, 10) . "...");
+
             // Send reset email
             $emailSent = sendPasswordResetEmail($employee['email'], $employee['name'], $token);
 
             if ($emailSent) {
                 $success = 'A password reset link has been sent to your email address. Please check your inbox (and spam folder).';
+                error_log("✅ Email sent successfully to: {$employee['email']}");
             } else {
                 $error = 'Failed to send reset email. Please try again or contact support.';
+                error_log("❌ Email sending FAILED to: {$employee['email']}");
+                error_log("   Check railway_email_test.php to diagnose SMTP configuration");
             }
         }
     } else {
