@@ -22,7 +22,10 @@
       "Bash(git commit -m ':*)",
       "Bash(php:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(ls -la *.php)",
+      "Bash(find .:*)",
+      "Bash([ -f \"resetpass.php\" ])"
     ]
   }
 }
