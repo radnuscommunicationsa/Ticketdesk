@@ -11,6 +11,11 @@ $notif_count = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE emp_id=? 
 $notif_count->execute([$uid]);
 $notif_count = (int)$notif_count->fetchColumn();
 
+// Get assigned assets count
+$assets_count = $pdo->prepare("SELECT COUNT(*) FROM asset_assignments aa JOIN assets a ON aa.asset_id = a.id WHERE aa.emp_id = ? AND aa.returned_at IS NULL");
+$assets_count->execute([$uid]);
+$assets_count = (int)$assets_count->fetchColumn();
+
 // Stats (always show overall counts regardless of filter)
 $my_total    = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE emp_id=?"); $my_total->execute([$uid]); $my_total = $my_total->fetchColumn();
 $my_open     = $pdo->prepare("SELECT COUNT(*) FROM tickets WHERE emp_id=? AND status='open'"); $my_open->execute([$uid]); $my_open = $my_open->fetchColumn();
@@ -69,6 +74,7 @@ $tickets = $tickets->fetchAll();
       <div class="side-label">My Account</div>
       <a href="dashboard.php" class="side-item active"><span class="side-icon"><i class="fa-solid fa-list-ul"></i></span> My Tickets</a>
       <a href="raise_ticket.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-plus"></i></span> Raise Ticket</a>
+      <a href="assets.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-box"></i></span> My Assets <?php if($assets_count>0): ?><span class="side-badge"><?= $assets_count ?></span><?php endif; ?></a>
       <a href="notifications.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-bell"></i></span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
       <a href="profile.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
     </div>

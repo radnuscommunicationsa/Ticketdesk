@@ -26,7 +26,8 @@
       "Bash(ls -la *.php)",
       "Bash(find .:*)",
       "Bash([ -f \"resetpass.php\" ])",
-      "Bash(ls test_*.php diagnose_*.php railway_*.php check_*.php create_*.php migrate_*.php debug_*.php setup_*.php one_click_*.php test_mobile.php)"
+      "Bash(ls test_*.php diagnose_*.php railway_*.php check_*.php create_*.php migrate_*.php debug_*.php setup_*.php one_click_*.php test_mobile.php)",
+      "Bash(mysql:*)"
     ]
   }
 }
