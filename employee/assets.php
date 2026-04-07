@@ -170,12 +170,12 @@ $available = 0; // Not applicable for employee view
           <div class="card-title">Assigned Assets (<?= count($assets) ?>)</div>
         </div>
         <div class="card-body" style="padding:0">
-          <?php foreach ($assets as $a): ?>
+          <?php foreach ($assets as $index => $a): ?>
             <div class="asset-card" style="margin:0;border-radius:0;border:none;border-bottom:1px solid var(--border);padding:1.5rem">
-              <?php if ($loop->first): ?>
+              <?php if ($index === 0): ?>
                 <style>.asset-card { border-radius: 12px 12px 0 0 !important; }</style>
               <?php endif; ?>
-              <?php if ($loop->last): ?>
+              <?php if ($index === count($assets) - 1): ?>
                 <style>.asset-card { border-bottom: none !important; }</style>
               <?php endif; ?>
 
