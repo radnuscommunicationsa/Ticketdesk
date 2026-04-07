@@ -7,6 +7,10 @@ $uid     = $_SESSION['user_id'];
 $success = $error = '';
 $errors  = [];
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Unread notification count
 $notif_count = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE emp_id=? AND is_read=0");
 $notif_count->execute([$uid]);
@@ -164,27 +168,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <title>Raise Ticket — TicketDesk</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="<?= SITE_URL ?>/assets/css/style.css"/>
+<script>
+// Fallback: if Font Awesome fails to load, replace icons with emoji
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        var testIcon = document.querySelector('.fa-paperclip');
+        if (testIcon) {
+            var style = window.getComputedStyle(testIcon);
+            // If the icon has no content or wrong font-family, replace with emoji
+            if (!testIcon.innerHTML || style.fontFamily.includes('sans-serif')) {
+                testIcon.outerHTML = '📎';
+            }
+        }
+    }, 2000);
+});
+</script>
 <style>
-.upload-area {
-    border: 2px dashed var(--border);
-    border-radius: 8px;
-    padding: 1.5rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: var(--bg-input);
-    position: relative;
+/* Small override to ensure the upload area file input covers the full area */
+.upload-area input[type="file"] {
+    width: 100%;
+    height: 100%;
 }
-.upload-area:hover, .upload-area.drag { border-color: var(--primary); background: var(--primary-glow); }
-.upload-area input[type=file] { position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%; }
-.upload-icon { font-size: 2rem; margin-bottom: 6px; }
-.upload-text { font-size: 0.83rem; color: var(--text-sub); }
-.upload-sub  { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
-.file-preview { display:none; margin-top:10px; padding:8px 12px; background:var(--bg-mid); border-radius:6px; border:1px solid var(--border); font-size:0.8rem; color:var(--text-main); align-items:center; gap:8px; }
-.file-preview.show { display:flex; }
-.field-error { color:#FCA5A5; font-size:0.72rem; margin-top:3px; display:block; }
-.input-invalid { border-color:#EF4444 !important; }
-.char-count { font-size:0.68rem; color:var(--text-muted); text-align:right; margin-top:2px; }
 </style>
 </head>
 <body>
@@ -332,7 +336,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
               <label>Attachment (optional) <span style="font-weight:400;text-transform:none;color:var(--text-muted)">— Screenshot or file (max 5MB)</span></label>
               <div class="upload-area" id="uploadArea">
                 <input type="file" name="attachment" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt,.xlsx,.zip"/>
-                <div class="upload-icon"><i class="fa-regular fa-paperclip"></i></div>
+                <div class="upload-icon"><i class="fa-solid fa-paperclip" style="font-size: 2.5rem; color: #94a3b8;"></i></div>
                 <div class="upload-text">Click to upload or drag & drop</div>
                 <div class="upload-sub">JPG, PNG, PDF, DOC, XLSX, ZIP — Max 5MB</div>
               </div>
@@ -358,58 +362,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <script>
-var fileInput  = document.getElementById('fileInput');
-var uploadArea = document.getElementById('uploadArea');
-var preview    = document.getElementById('filePreview');
-var descArea   = document.getElementById('desc_area');
-var descCount  = document.getElementById('desc_count');
+document.addEventListener('DOMContentLoaded', function() {
+    var fileInput  = document.getElementById('fileInput');
+    var uploadArea = document.getElementById('uploadArea');
+    var preview    = document.getElementById('filePreview');
+    var descArea   = document.getElementById('desc_area');
+    var descCount  = document.getElementById('desc_count');
 
-// Character counter
-if (descArea && descCount) {
-    descArea.addEventListener('input', function() {
-        descCount.textContent = this.value.length;
-    });
-}
-
-fileInput.addEventListener('change', function(){
-    if (this.files[0]) showPreview(this.files[0]);
-});
-
-// Drag & drop
-uploadArea.addEventListener('dragover',  function(e){ e.preventDefault(); this.classList.add('drag'); });
-uploadArea.addEventListener('dragleave', function()  { this.classList.remove('drag'); });
-uploadArea.addEventListener('drop', function(e){
-    e.preventDefault(); this.classList.remove('drag');
-    if (e.dataTransfer.files[0]) {
-        fileInput.files = e.dataTransfer.files;
-        showPreview(e.dataTransfer.files[0]);
+    if (!uploadArea || !fileInput) {
+        console.error('Upload elements not found');
+        return;
     }
-});
 
-function showPreview(file) {
-    var icons = {
-        jpg:  '<i class="fa-regular fa-file-image"></i>',
-        jpeg: '<i class="fa-regular fa-file-image"></i>',
-        png:  '<i class="fa-regular fa-file-image"></i>',
-        gif:  '<i class="fa-regular fa-file-image"></i>',
-        pdf:  '<i class="fa-regular fa-file-pdf"></i>',
-        doc:  '<i class="fa-regular fa-file-word"></i>',
-        docx: '<i class="fa-regular fa-file-word"></i>',
-        xlsx: '<i class="fa-regular fa-file-excel"></i>',
-        zip:  '<i class="fa-regular fa-file-zipper"></i>',
-        txt:  '<i class="fa-regular fa-file-lines"></i>'
+    // Character counter
+    if (descArea && descCount) {
+        descArea.addEventListener('input', function() {
+            descCount.textContent = this.value.length;
+        });
+    }
+
+    fileInput.addEventListener('change', function(){
+        if (this.files && this.files[0]) {
+            showPreview(this.files[0]);
+        }
+    });
+
+    // Drag & drop
+    uploadArea.addEventListener('dragover',  function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.add('drag');
+    });
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.remove('drag');
+    });
+    uploadArea.addEventListener('drop', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        this.classList.remove('drag');
+        if (e.dataTransfer && e.dataTransfer.files[0]) {
+            fileInput.files = e.dataTransfer.files;
+            showPreview(e.dataTransfer.files[0]);
+        }
+    });
+
+    window.showPreview = function(file) {
+        var icons = {
+            jpg:  '<i class="fa-regular fa-file-image"></i>',
+            jpeg: '<i class="fa-regular fa-file-image"></i>',
+            png:  '<i class="fa-regular fa-file-image"></i>',
+            gif:  '<i class="fa-regular fa-file-image"></i>',
+            pdf:  '<i class="fa-regular fa-file-pdf"></i>',
+            doc:  '<i class="fa-regular fa-file-word"></i>',
+            docx: '<i class="fa-regular fa-file-word"></i>',
+            xlsx: '<i class="fa-regular fa-file-excel"></i>',
+            zip:  '<i class="fa-regular fa-file-zipper"></i>',
+            txt:  '<i class="fa-regular fa-file-lines"></i>'
+        };
+        var ext = file.name.split('.').pop().toLowerCase();
+        var iconHtml = icons[ext] || '<i class="fa-regular fa-file"></i>';
+
+        var iconEl = document.getElementById('fileIcon');
+        var nameEl = document.getElementById('fileName');
+        var sizeEl = document.getElementById('fileSize');
+
+        if (iconEl) iconEl.innerHTML = iconHtml;
+        if (nameEl) nameEl.textContent = file.name;
+        if (sizeEl) sizeEl.textContent = (file.size/1024/1024).toFixed(2) + ' MB';
+        if (preview) preview.classList.add('show');
     };
-    var ext = file.name.split('.').pop().toLowerCase();
-    document.getElementById('fileIcon').innerHTML = icons[ext] || '<i class="fa-regular fa-file"></i>';
-    document.getElementById('fileName').textContent = file.name;
-    document.getElementById('fileSize').textContent = (file.size/1024/1024).toFixed(2) + ' MB';
-    preview.classList.add('show');
-}
 
-function clearFile() {
-    fileInput.value = '';
-    preview.classList.remove('show');
-}
+    window.clearFile = function() {
+        if (fileInput) fileInput.value = '';
+        if (preview) preview.classList.remove('show');
+    };
+});
 </script>
 <script src="<?= SITE_URL ?>/assets/js/theme.js"></script>
 </body>
