@@ -3,6 +3,11 @@ require_once __DIR__ . '/../includes/config.php';
 requireLogin();
 if (isAdmin()) redirect(SITE_URL . '/admin/dashboard.php');
 
+// Helper function for employee URLs
+function employeeUrl($page = '') {
+    return SITE_URL . '/employee/' . ltrim($page, '/');
+}
+
 $uid = $_SESSION['user_id'];
 $status = $_GET['status'] ?? '';
 
@@ -52,12 +57,12 @@ $tickets = $tickets->fetchAll();
 <div class="topbar">
   <div class="logo"><div class="logo-icon"><i class="fa-solid fa-computer"></i></div>Ticket<span>Desk</span></div>
   <div class="topbar-nav">
-    <a href="dashboard.php" class="active">My Tickets</a>
-    <a href="raise_ticket.php">Raise Ticket</a>
-    <a href="profile.php">Profile</a>
+    <a href="<?= employeeUrl('dashboard.php') ?>" class="active">My Tickets</a>
+    <a href="<?= employeeUrl('raise_ticket.php') ?>">Raise Ticket</a>
+    <a href="<?= employeeUrl('profile.php') ?>">Profile</a>
   </div>
   <div class="topbar-right">
-    <a href="notifications.php" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">
+    <a href="<?= employeeUrl('notifications.php') ?>" style="position:relative;text-decoration:none;font-size:1.2rem;padding:4px 8px" title="Notifications">
       <i class="fa-solid fa-bell"></i><?php if($notif_count>0): ?><span style="position:absolute;top:0;right:0;background:#EF4444;color:#fff;font-size:0.55rem;font-weight:700;padding:1px 4px;border-radius:10px"><?= $notif_count ?></span><?php endif; ?>
     </a>
     <div class="user">
@@ -72,17 +77,17 @@ $tickets = $tickets->fetchAll();
   <div class="sidebar">
     <div class="side-section">
       <div class="side-label">My Account</div>
-      <a href="dashboard.php" class="side-item active"><span class="side-icon"><i class="fa-solid fa-list-ul"></i></span> My Tickets</a>
-      <a href="raise_ticket.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-plus"></i></span> Raise Ticket</a>
-      <a href="assets.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-box"></i></span> My Assets <?php if($assets_count>0): ?><span class="side-badge"><?= $assets_count ?></span><?php endif; ?></a>
-      <a href="notifications.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-bell"></i></span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
-      <a href="profile.php" class="side-item"><span class="side-icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
+      <a href="<?= employeeUrl('dashboard.php') ?>" class="side-item active"><span class="side-icon"><i class="fa-solid fa-list-ul"></i></span> My Tickets</a>
+      <a href="<?= employeeUrl('raise_ticket.php') ?>" class="side-item"><span class="side-icon"><i class="fa-solid fa-plus"></i></span> Raise Ticket</a>
+      <a href="<?= employeeUrl('assets.php') ?>" class="side-item"><span class="side-icon"><i class="fa-solid fa-box"></i></span> My Assets <?php if($assets_count>0): ?><span class="side-badge"><?= $assets_count ?></span><?php endif; ?></a>
+      <a href="<?= employeeUrl('notifications.php') ?>" class="side-item"><span class="side-icon"><i class="fa-solid fa-bell"></i></span> Notifications <?php if($notif_count>0): ?><span class="side-badge"><?= $notif_count ?></span><?php endif; ?></a>
+      <a href="<?= employeeUrl('profile.php') ?>" class="side-item"><span class="side-icon"><i class="fa-solid fa-user"></i></span> My Profile</a>
     </div>
     <div class="side-section">
       <div class="side-label">Filter</div>
-      <a href="dashboard.php?status=open" class="side-item <?= $status === 'open' ? 'active' : '' ?>"><span class="side-icon"><i class="fa-solid fa-circle" style="color:#3B82F6"></i></span> Open <span class="side-badge"><?= $my_open ?></span></a>
-      <a href="dashboard.php?status=in-progress" class="side-item <?= $status === 'in-progress' ? 'active' : '' ?>"><span class="side-icon"><i class="fa-solid fa-circle" style="color:#F59E0B"></i></span> In Progress <span class="side-badge"><?= $my_inprog ?></span></a>
-      <a href="dashboard.php?status=resolved" class="side-item <?= $status === 'resolved' ? 'active' : '' ?>"><span class="side-icon"><i class="fa-solid fa-circle" style="color:#10B981"></i></span> Resolved</a>
+      <a href="<?= employeeUrl('dashboard.php?status=open') ?>" class="side-item <?= $status === 'open' ? 'active' : '' ?>"><span class="side-icon"><i class="fa-solid fa-circle" style="color:#3B82F6"></i></span> Open <span class="side-badge"><?= $my_open ?></span></a>
+      <a href="<?= employeeUrl('dashboard.php?status=in-progress') ?>" class="side-item <?= $status === 'in-progress' ? 'active' : '' ?>"><span class="side-icon"><i class="fa-solid fa-circle" style="color:#F59E0B"></i></span> In Progress <span class="side-badge"><?= $my_inprog ?></span></a>
+      <a href="<?= employeeUrl('dashboard.php?status=resolved') ?>" class="side-item <?= $status === 'resolved' ? 'active' : '' ?>"><span class="side-icon"><i class="fa-solid fa-circle" style="color:#10B981"></i></span> Resolved</a>
     </div>
     <div class="side-section">
       <div class="side-label">Account</div>

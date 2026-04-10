@@ -28,7 +28,9 @@
       "Bash([ -f \"resetpass.php\" ])",
       "Bash(ls test_*.php diagnose_*.php railway_*.php check_*.php create_*.php migrate_*.php debug_*.php setup_*.php one_click_*.php test_mobile.php)",
       "Bash(mysql:*)",
-      "Bash(curl -s \"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\")"
+      "Bash(curl -s \"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css\")",
+      "Bash(rm:*)",
+      "Bash(/c/xampp/php/php.exe:*)"
     ]
   }
 }
